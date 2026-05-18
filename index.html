@@ -450,8 +450,9 @@
         <span id="leg-dir" style="display:none"><span class="dot" style="background:#eab308; border-radius:2px; width:20px; height:4px; border-radius:2px"></span>ทิศเคลื่อนที่</span>
       </div>
 
-      <div class="canvas-wrap" id="canvasWrap">
-        <canvas id="radarCanvas"></canvas>
+      <div class="canvas-wrap" id="canvasWrap" style="position: relative;">
+        <img id="radarBgImg" style="position: absolute; top:0; left:0; width:100%; height:auto; z-index: 1; pointer-events: none; display: none;">
+        <canvas id="radarCanvas" style="position: relative; z-index: 2; background: transparent;"></canvas>
       </div>
       <div class="canvas-hint" id="canvasHint">แตะบนภาพเพื่อระบุตำแหน่งของคุณ</div>
 
@@ -630,6 +631,8 @@ function loadFromFile(input) {
 function initCanvas(img) {
   const canvas = document.getElementById('radarCanvas');
   const wrap = document.getElementById('canvasWrap');
+  const bgImg = document.getElementById('radarBgImg');
+  
   let displayW = wrap.clientWidth;
   if (!displayW || displayW < 10) {
     displayW = window.innerWidth - 36;
@@ -637,16 +640,100 @@ function initCanvas(img) {
   const ratio = img.naturalHeight / img.naturalWidth;
   const displayH = displayW * ratio;
 
+  // ตั้งค่า Canvas ให้ตรงกับขนาดภาพจริง
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
   canvas.style.width = displayW + 'px';
   canvas.style.height = displayH + 'px';
 
+  // ตั้งค่ารูปภาพ GIF แอนิเมชันด้านหลังให้ขนาดเท่ากัน
+  bgImg.src = img.src;
+  bgImg.style.display = 'block';
+
   state.canvasW = img.naturalWidth;
   state.canvasH = img.naturalHeight;
 
   drawCanvas();
-  attachCanvasEvents(canvas);
+  
+  // ==========================================
+  // TOUCH EVENTS สำหรับมือถือ
+  // ==========================================
+  const getPos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
+    };
+  };
+
+  const onStart = (e) => {
+    if (state.step === 2 || state.step === 3 || state.step === 4) {
+      if (e.cancelable) e.preventDefault();
+    }
+    
+    const pos = getPos(e);
+    if (state.step === 2) {
+      state.userPt = pos;
+      drawCanvas();
+      document.getElementById('confirmUserBtn').classList.remove('hidden');
+      document.getElementById('canvasHint').textContent = 'แตะใหม่เพื่อเปลี่ยนตำแหน่ง';
+    } else if (state.step === 3) {
+      state.arrowStart = pos;
+      state.arrowEnd = null;
+      state.arrowDrawing = true;
+    } else if (state.step === 4) {
+      if (state.rainPhase === 'old') {
+        state.oldRain = pos;
+        drawCanvas();
+        document.getElementById('leg-old').style.display = 'flex';
+        state.rainPhase = 'new';
+        document.getElementById('stepInstruction').innerHTML =
+          '🟢 <strong>จุด B (เฟรมใหม่):</strong> แตะตำแหน่งของก้อนฝน<strong>เดียวกัน</strong>ในเฟรมล่าสุด (ปัจจุบัน)';
+        setMode('new');
+      } else {
+        state.newRain = pos;
+        drawCanvas();
+        document.getElementById('leg-new').style.display = 'flex';
+        document.getElementById('confirmRainBtn').disabled = false;
+        document.getElementById('stepInstruction').innerHTML =
+          '✅ ระบุครบแล้ว — กด <strong>"ยืนยัน"</strong> เพื่อคำนวณความเร็วฝน';
+        setMode('done');
+      }
+    }
+  };
+
+  const onMove = (e) => {
+    if (state.step === 3 && state.arrowDrawing) {
+      if (e.cancelable) e.preventDefault();
+      state.arrowEnd = getPos(e);
+      drawCanvas();
+    }
+  };
+
+  const onEnd = (e) => {
+    if (state.step === 3 && state.arrowDrawing) {
+      state.arrowDrawing = false;
+      if (state.arrowEnd) {
+        document.getElementById('arrowControls').classList.remove('hidden');
+        document.getElementById('leg-dir').style.display = 'flex';
+        document.getElementById('stepInstruction').innerHTML =
+          '↗️ ทิศทางที่คุณลาก — ถ้าถูกต้องแล้วกด <strong>"ยืนยัน"</strong>';
+      }
+    }
+  };
+
+  canvas.addEventListener('touchstart', onStart, { passive: false });
+  canvas.addEventListener('touchmove', onMove, { passive: false });
+  canvas.addEventListener('touchend', onEnd, { passive: false });
+  
+  canvas.addEventListener('mousedown', onStart);
+  canvas.addEventListener('mousemove', (e) => { if (e.buttons) onMove(e); });
+  canvas.addEventListener('mouseup', onEnd);
 }
 
 function drawCanvas() {
@@ -654,8 +741,11 @@ function drawCanvas() {
   const ctx = canvas.getContext('2d');
   if (!state.radarImg) return;
 
+  // เคลียร์ Canvas ให้โปร่งใส เพื่อให้เห็นภาพ GIF ที่วิ่งอยู่ด้านหลัง
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(state.radarImg, 0, 0);
+  
+  // ลบหรือคอมเมนต์บรรทัดนี้ออกไปเลยครับ เพื่อไม่ให้รูปภาพนิ่งมาวาดบัง
+  // ctx.drawImage(state.radarImg, 0, 0); 
 
   // Draw arrow (direction)
   if (state.arrowStart && state.arrowEnd) {
