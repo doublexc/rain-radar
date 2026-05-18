@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ฝนมาหรือยัง?</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2540;
+    --border: #1e3a5f;
+    --accent: #00d4ff;
+    --accent2: #0099cc;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .header-icon { font-size: 26px; }
+  .header-title { font-size: 20px; font-weight: 800; color: var(--accent); line-height: 1.1; }
+  .header-sub { font-size: 11px; color: var(--text-dim); }
+
+  /* ===== STEPS ===== */
+  .steps {
+    display: flex;
+    gap: 0;
+    padding: 12px 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .steps::-webkit-scrollbar { display: none; }
+
+  .step-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    border: 1.5px solid transparent;
+    transition: all .25s;
+    cursor: default;
+  }
+  .step-pill.active {
+    background: rgba(0,212,255,.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .step-pill.done {
+    background: rgba(34,197,94,.1);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .step-num {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800;
+    background: var(--surface2);
+    flex-shrink: 0;
+  }
+  .step-pill.active .step-num { background: var(--accent); color: #000; }
+  .step-pill.done .step-num { background: var(--green); color: #000; }
+
+  .step-arrow {
+    color: var(--border);
+    font-size: 14px;
+    padding: 0 2px;
+    display: flex; align-items: center;
+  }
+
+  /* ===== MAIN CONTENT ===== */
+  .content { padding: 16px 18px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .badge {
+    font-size: 11px;
+    background: rgba(0,212,255,.15);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  /* ===== INSTRUCTION BOX ===== */
+  .instruction {
+    background: rgba(0,212,255,.07);
+    border: 1px solid rgba(0,212,255,.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #a0c4d8;
+    margin-bottom: 14px;
+  }
+  .instruction strong { color: var(--accent); }
+
+  /* ===== BIG BUTTON ===== */
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:active { transform: scale(.97); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000;
+  }
+  .btn-primary:disabled {
+    background: var(--surface2);
+    color: var(--text-dim);
+    cursor: not-allowed;
+  }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    margin-top: 8px;
+  }
+  .btn-danger {
+    background: rgba(239,68,68,.15);
+    color: var(--red);
+    border: 1px solid rgba(239,68,68,.3);
+    margin-top: 8px;
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  /* ===== CANVAS WRAPPER ===== */
+  .canvas-wrap {
+    position: relative;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1.5px solid var(--border);
+    background: #05080f;
+    touch-action: none;
+  }
+  .canvas-wrap canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* ===== MODE INDICATOR ===== */
+  .mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+  .mode-badge.mode-user { background: rgba(0,212,255,.15); color: var(--accent); border: 1px solid rgba(0,212,255,.3); }
+  .mode-badge.mode-dir { background: rgba(234,179,8,.15); color: var(--yellow); border: 1px solid rgba(234,179,8,.3); }
+  .mode-badge.mode-old { background: rgba(239,68,68,.15); color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+  .mode-badge.mode-new { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+  .mode-badge.mode-done { background: rgba(168,85,247,.15); color: #c084fc; border: 1px solid rgba(168,85,247,.3); }
+
+  .dot-legend {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+  }
+  .dot-legend span {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--text-dim);
+  }
+  .dot-legend .dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  /* ===== COLOR PICKER ===== */
+  .color-picker {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .color-btn {
+    padding: 14px 8px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all .2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .color-btn:active { transform: scale(.95); }
+  .color-btn .circle {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+  }
+  .color-btn.green-btn { background: rgba(34,197,94,.1); color: var(--green); }
+  .color-btn.yellow-btn { background: rgba(234,179,8,.1); color: var(--yellow); }
+  .color-btn.red-btn { background: rgba(239,68,68,.1); color: var(--red); }
+  .color-btn.selected-green { border-color: var(--green); background: rgba(34,197,94,.25); }
+  .color-btn.selected-yellow { border-color: var(--yellow); background: rgba(234,179,8,.25); }
+  .color-btn.selected-red { border-color: var(--red); background: rgba(239,68,68,.25); }
+
+  /* ===== RESULT ===== */
+  .result-card {
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,212,255,.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .result-percent {
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .result-percent.low { color: var(--green); }
+  .result-percent.mid { color: var(--yellow); }
+  .result-percent.high { color: var(--red); }
+  .result-label { font-size: 14px; color: var(--text-dim); margin-bottom: 16px; }
+  .result-time {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .result-time-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+  .result-breakdown {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 14px;
+    text-align: left;
+  }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .breakdown-row:last-child { border: none; }
+  .breakdown-row span:last-child { color: var(--accent); font-weight: 600; }
+
+  /* ===== DIVIDER ===== */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 14px 0;
+  }
+
+  /* ===== LOADING ===== */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 24px;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== ERROR ===== */
+  .error-box {
+    background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #fca5a5;
+    margin-bottom: 12px;
+  }
+
+  /* ===== HIDDEN ===== */
+  .hidden { display: none !important; }
+
+  /* ===== PULSE ANIM ===== */
+  @keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+
+  .canvas-hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  /* ===== TOGGLE SWITCH ===== */
+  .info-note {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.03);
+    border-radius: 8px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-icon">🌧️</div>
+  <div>
+    <div class="header-title">ฝนมาหรือยัง?</div>
+    <div class="header-sub">ประเมินจากเรดาร์กรุงเทพฯ</div>
+  </div>
+</div>
+
+<!-- STEP PILLS -->
+<div class="steps" id="stepBar">
+  <div class="step-pill active" id="pill-1"><span class="step-num">1</span>โหลดภาพ</div>
+  <div class="step-arrow">›</div>
+  <div class="step-pill" id="pill-2"><span class="step-num">2</span>จุดผู้ใช้</div>
+  <div class="step-arrow">›</div>
+  <div class="step-pill" id="pill-3"><span class="step-num">3</span>ทิศฝน</div>
+  <div class="step-arrow">›</div>
+  <div class="step-pill" id="pill-4"><span class="step-num">4</span>ตำแหน่งฝน</div>
+  <div class="step-arrow">›</div>
+  <div class="step-pill" id="pill-5"><span class="step-num">5</span>ความแรง</div>
+  <div class="step-arrow">›</div>
+  <div class="step-pill" id="pill-6"><span class="step-num">6</span>ผลลัพธ์</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- ======== STEP 1: LOAD RADAR ======== -->
+  <div id="sec-1">
+    <div class="card">
+      <div class="card-title">📡 โหลดภาพเรดาร์ <span class="badge">ขั้นตอน 1</span></div>
+      <div class="instruction">
+        กดปุ่มด้านล่างเพื่อโหลดภาพเรดาร์ล่าสุดจากกรุงเทพมหานคร<br>
+        ภาพเป็น <strong>GIF แบบ animation</strong> มี 11 เฟรม ห่างกัน 5 นาที<br>
+        รวมข้อมูลย้อนหลังประมาณ <strong>50 นาที</strong>
+      </div>
+      <button class="btn btn-primary" id="loadBtn" onclick="loadRadar()">
+        <span>📥</span> โหลดภาพเรดาร์กรุงเทพฯ
+      </button>
+      <div class="info-note">
+        💡 หากภาพไม่โหลด อาจเกิดจาก CORS ของ browser — ลองเปิดในแอป browser โดยตรง
+      </div>
+    </div>
+
+    <div id="loadingBox" class="hidden">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <div>กำลังโหลดภาพเรดาร์...</div>
+      </div>
+    </div>
+
+    <div id="errorBox" class="error-box hidden"></div>
+  </div>
+
+  <!-- ======== STEP 2-4: CANVAS INTERACTION ======== -->
+  <div id="sec-canvas" class="hidden">
+
+    <div class="card">
+      <div id="modeLabel" class="mode-badge mode-user">📍 แตะจุดที่คุณอยู่</div>
+
+      <div class="dot-legend" id="legendBox">
+        <span><span class="dot" style="background:#00d4ff"></span>ตำแหน่งคุณ</span>
+        <span id="leg-old" style="display:none"><span class="dot" style="background:#f87171"></span>ฝน (เฟรมเก่า)</span>
+        <span id="leg-new" style="display:none"><span class="dot" style="background:#22c55e"></span>ฝน (เฟรมใหม่)</span>
+        <span id="leg-dir" style="display:none"><span class="dot" style="background:#eab308; border-radius:2px; width:20px; height:4px; border-radius:2px"></span>ทิศเคลื่อนที่</span>
+      </div>
+
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="radarCanvas"></canvas>
+      </div>
+      <div class="canvas-hint" id="canvasHint">แตะบนภาพเพื่อระบุตำแหน่งของคุณ</div>
+
+      <div class="divider"></div>
+
+      <div id="stepInstruction" class="instruction" style="margin-bottom:0">
+        👆 <strong>ขั้นตอน 2:</strong> แตะบนภาพเรดาร์ที่ตำแหน่งบ้าน / ที่ทำงาน / จุดที่คุณต้องการตรวจ
+      </div>
+    </div>
+
+    <div id="actionBtns">
+      <button class="btn btn-primary hidden" id="confirmUserBtn" onclick="confirmUser()">
+        ✅ ยืนยันตำแหน่ง → ไปขั้นถัดไป
+      </button>
+      <!-- step 3: draw arrow -->
+      <div id="arrowControls" class="hidden">
+        <button class="btn btn-primary" id="confirmDirBtn" onclick="confirmDirection()">
+          ✅ ยืนยันทิศทางฝน → ไปขั้นถัดไป
+        </button>
+        <button class="btn btn-secondary" onclick="resetDirection()">🔄 วาดใหม่</button>
+      </div>
+      <!-- step 4 -->
+      <div id="rainPtControls" class="hidden">
+        <button class="btn btn-primary" id="confirmRainBtn" onclick="confirmRainPoints()" disabled>
+          ✅ ยืนยันตำแหน่งฝน → คำนวณ
+        </button>
+        <button class="btn btn-secondary" onclick="resetRainPoints()">🔄 เริ่มใหม่</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ======== STEP 5: INTENSITY ======== -->
+  <div id="sec-5" class="hidden">
+    <div class="card">
+      <div class="card-title">🎨 ความแรงของฝน <span class="badge">ขั้นตอน 5</span></div>
+      <div class="instruction">
+        ดูจากภาพเรดาร์ — สีของก้อนฝนที่คุณชี้ <strong>ส่วนใหญ่เป็นสีอะไร?</strong>
+      </div>
+      <div class="color-picker">
+        <button class="btn color-btn green-btn" onclick="selectColor('green', this)">
+          <span class="circle" style="background:radial-gradient(circle, #4ade80, #16a34a)"></span>
+          <span>เขียว</span>
+          <span style="font-size:10px;font-weight:400;color:#86efac">ฝนเบา</span>
+        </button>
+        <button class="btn color-btn yellow-btn" onclick="selectColor('yellow', this)">
+          <span class="circle" style="background:radial-gradient(circle, #fde047, #ca8a04)"></span>
+          <span>เหลือง</span>
+          <span style="font-size:10px;font-weight:400;color:#fef08a">ฝนปานกลาง</span>
+        </button>
+        <button class="btn color-btn red-btn" onclick="selectColor('red', this)">
+          <span class="circle" style="background:radial-gradient(circle, #f87171, #b91c1c)"></span>
+          <span>แดง</span>
+          <span style="font-size:10px;font-weight:400;color:#fca5a5">ฝนหนัก</span>
+        </button>
+      </div>
+      <button class="btn btn-primary" id="calcBtn" disabled onclick="calculate()">
+        🧮 คำนวณโอกาสฝน
+      </button>
+    </div>
+  </div>
+
+  <!-- ======== STEP 6: RESULT ======== -->
+  <div id="sec-6" class="hidden">
+    <div class="result-card" id="resultCard">
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px">โอกาสที่ฝนจะตกถึงคุณ</div>
+      <div class="result-percent" id="resultPercent">–</div>
+      <div class="result-label" id="resultLabel">–</div>
+      <div class="result-time" id="resultTime">–</div>
+      <div class="result-time-label" id="resultTimeLabel"></div>
+      <div class="result-breakdown" id="resultBreakdown"></div>
+    </div>
+
+    <button class="btn btn-secondary" onclick="restartAll()">🔄 ประเมินใหม่</button>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  step: 1,
+  radarImg: null,
+  canvasW: 0, canvasH: 0,
+  userPt: null,
+  arrowStart: null, arrowEnd: null, arrowDrawing: false,
+  oldRain: null, newRain: null, rainPhase: 'old', // 'old' | 'new'
+  intensity: null,
+};
+
+const RADAR_URL = 'https://weather.bangkok.go.th/Images/Radar/nkradar.gif';
+const RADAR_TIME_SPAN = 50; // minutes across all frames
+
+// ============================================================
+// STEP NAVIGATION
+// ============================================================
+function setStep(n) {
+  state.step = n;
+  [1,2,3,4,5,6].forEach(i => {
+    const p = document.getElementById('pill-' + i);
+    p.classList.remove('active','done');
+    if (i < n) p.classList.add('done');
+    else if (i === n) p.classList.add('active');
+  });
+  // scroll step bar to active
+  const activePill = document.getElementById('pill-' + n);
+  activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+
+// ============================================================
+// STEP 1: LOAD RADAR
+// ============================================================
+function loadRadar() {
+  document.getElementById('loadBtn').disabled = true;
+  document.getElementById('loadingBox').classList.remove('hidden');
+  document.getElementById('errorBox').classList.add('hidden');
+
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+
+  img.onload = () => {
+    document.getElementById('loadingBox').classList.add('hidden');
+    state.radarImg = img;
+    initCanvas(img);
+    document.getElementById('sec-1').classList.add('hidden');
+    document.getElementById('sec-canvas').classList.remove('hidden');
+    setStep(2);
+    setMode('user');
+  };
+
+  img.onerror = () => {
+    document.getElementById('loadingBox').classList.add('hidden');
+    document.getElementById('loadBtn').disabled = false;
+    const eb = document.getElementById('errorBox');
+    eb.classList.remove('hidden');
+    eb.innerHTML = `
+      ⚠️ โหลดภาพไม่ได้ (CORS / network)<br><br>
+      <strong>วิธีแก้:</strong> เปิด <a href="${RADAR_URL}" target="_blank" style="color:var(--accent)">ลิงก์นี้</a>
+      ในแท็บใหม่ แล้วบันทึกเป็น GIF จากนั้นอัปโหลดด้านล่าง<br><br>
+      <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+        background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);
+        border-radius:8px;padding:10px 14px;font-size:13px;color:var(--accent)">
+        📁 อัปโหลด GIF เรดาร์จากเครื่อง
+        <input type="file" accept="image/gif,image/*" style="display:none" onchange="loadFromFile(this)">
+      </label>
+    `;
+  };
+
+  img.src = RADAR_URL + '?t=' + Date.now();
+}
+
+function loadFromFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('loadBtn').disabled = true;
+  document.getElementById('loadingBox').classList.remove('hidden');
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    document.getElementById('loadingBox').classList.add('hidden');
+    state.radarImg = img;
+    initCanvas(img);
+    document.getElementById('sec-1').classList.add('hidden');
+    document.getElementById('sec-canvas').classList.remove('hidden');
+    setStep(2);
+    setMode('user');
+  };
+  img.src = url;
+}
+
+// ============================================================
+// CANVAS SETUP
+// ============================================================
+function initCanvas(img) {
+  const canvas = document.getElementById('radarCanvas');
+  const wrap = document.getElementById('canvasWrap');
+  const displayW = wrap.clientWidth;
+  const ratio = img.naturalHeight / img.naturalWidth;
+  const displayH = displayW * ratio;
+
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  canvas.style.width = displayW + 'px';
+  canvas.style.height = displayH + 'px';
+
+  state.canvasW = img.naturalWidth;
+  state.canvasH = img.naturalHeight;
+
+  drawCanvas();
+  attachCanvasEvents(canvas);
+}
+
+function drawCanvas() {
+  const canvas = document.getElementById('radarCanvas');
+  const ctx = canvas.getContext('2d');
+  if (!state.radarImg) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(state.radarImg, 0, 0);
+
+  // Draw arrow (direction)
+  if (state.arrowStart && state.arrowEnd) {
+    drawArrow(ctx, state.arrowStart, state.arrowEnd, '#eab308', 3);
+  }
+
+  // Draw user point
+  if (state.userPt) {
+    drawPulsePoint(ctx, state.userPt.x, state.userPt.y, '#00d4ff', '📍');
+  }
+
+  // Draw rain points
+  if (state.oldRain) {
+    drawPulsePoint(ctx, state.oldRain.x, state.oldRain.y, '#f87171', 'A');
+  }
+  if (state.newRain) {
+    drawPulsePoint(ctx, state.newRain.x, state.newRain.y, '#22c55e', 'B');
+  }
+}
+
+function drawPulsePoint(ctx, x, y, color, label) {
+  const r = 10;
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(x, y, r + 4, 0, Math.PI * 2);
+  ctx.strokeStyle = color + '55';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // Fill
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = color + 'cc';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // Label
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 10px Sarabun';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, x, y);
+}
+
+function drawArrow(ctx, from, to, color, width) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  if (len < 5) return;
+  const angle = Math.atan2(dy, dx);
+  const headLen = Math.min(20, len * .3);
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = width;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 6;
+
+  ctx.beginPath();
+  ctx.moveTo(from.x, from.y);
+  ctx.lineTo(to.x, to.y);
+  ctx.stroke();
+
+  // Arrow head
+  ctx.beginPath();
+  ctx.moveTo(to.x, to.y);
+  ctx.lineTo(to.x - headLen * Math.cos(angle - Math.PI/6), to.y - headLen * Math.sin(angle - Math.PI/6));
+  ctx.lineTo(to.x - headLen * Math.cos(angle + Math.PI/6), to.y - headLen * Math.sin(angle + Math.PI/6));
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ============================================================
+// CANVAS EVENTS
+// ============================================================
+function attachCanvasEvents(canvas) {
+  const getPos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
+    };
+  };
+
+  const onStart = (e) => {
+    e.preventDefault();
+    const pos = getPos(e);
+    if (state.step === 2) {
+      state.userPt = pos;
+      drawCanvas();
+      document.getElementById('confirmUserBtn').classList.remove('hidden');
+      document.getElementById('canvasHint').textContent = 'แตะใหม่เพื่อเปลี่ยนตำแหน่ง';
+    } else if (state.step === 3) {
+      state.arrowStart = pos;
+      state.arrowEnd = null;
+      state.arrowDrawing = true;
+    } else if (state.step === 4) {
+      if (state.rainPhase === 'old') {
+        state.oldRain = pos;
+        drawCanvas();
+        document.getElementById('leg-old').style.display = 'flex';
+        state.rainPhase = 'new';
+        document.getElementById('stepInstruction').innerHTML =
+          '🟢 <strong>จุด B (เฟรมใหม่):</strong> แตะตำแหน่งของก้อนฝน<strong>เดียวกัน</strong>ในเฟรมล่าสุด (ปัจจุบัน)';
+        setMode('new');
+      } else {
+        state.newRain = pos;
+        drawCanvas();
+        document.getElementById('leg-new').style.display = 'flex';
+        document.getElementById('confirmRainBtn').disabled = false;
+        document.getElementById('stepInstruction').innerHTML =
+          '✅ ระบุครบแล้ว — กด <strong>"ยืนยัน"</strong> เพื่อคำนวณความเร็วฝน';
+        setMode('done');
+      }
+    }
+  };
+
+  const onMove = (e) => {
+    if (state.step === 3 && state.arrowDrawing) {
+      e.preventDefault();
+      state.arrowEnd = getPos(e);
+      drawCanvas();
+    }
+  };
+
+  const onEnd = (e) => {
+    if (state.step === 3 && state.arrowDrawing) {
+      state.arrowDrawing = false;
+      if (state.arrowEnd) {
+        document.getElementById('arrowControls').classList.remove('hidden');
+        document.getElementById('leg-dir').style.display = 'flex';
+        document.getElementById('stepInstruction').innerHTML =
+          '↗️ ทิศทางที่คุณลาก — ถ้าถูกต้องแล้วกด <strong>"ยืนยัน"</strong>';
+      }
+    }
+  };
+
+  canvas.addEventListener('touchstart', onStart, { passive: false });
+  canvas.addEventListener('touchmove', onMove, { passive: false });
+  canvas.addEventListener('touchend', onEnd, { passive: false });
+  canvas.addEventListener('mousedown', onStart);
+  canvas.addEventListener('mousemove', (e) => { if (e.buttons) onMove(e); });
+  canvas.addEventListener('mouseup', onEnd);
+}
+
+// ============================================================
+// MODE LABELS
+// ============================================================
+function setMode(mode) {
+  const el = document.getElementById('modeLabel');
+  el.className = 'mode-badge mode-' + mode;
+  const labels = {
+    user: '📍 แตะจุดที่คุณอยู่',
+    dir: '↗️ ลากลูกศรทิศทางฝน',
+    old: '🔴 แตะตำแหน่งฝน (เฟรมเก่า / จุด A)',
+    new: '🟢 แตะตำแหน่งฝน (เฟรมใหม่ / จุด B)',
+    done: '✅ ระบุข้อมูลครบแล้ว',
+  };
+  el.textContent = labels[mode] || '';
+}
+
+// ============================================================
+// CONFIRM STEPS
+// ============================================================
+function confirmUser() {
+  if (!state.userPt) return;
+  document.getElementById('confirmUserBtn').classList.add('hidden');
+  setStep(3);
+  setMode('dir');
+  document.getElementById('stepInstruction').innerHTML =
+    '↗️ <strong>ขั้นตอน 3:</strong> <strong>แตะค้างแล้วลาก</strong>บนภาพ เพื่อวาดลูกศรแสดงทิศทางที่ก้อนฝนกำลังเคลื่อนที่';
+  document.getElementById('canvasHint').textContent = 'แตะค้างแล้วลาก = วาดลูกศรทิศทางฝน';
+}
+
+function confirmDirection() {
+  if (!state.arrowStart || !state.arrowEnd) return;
+  document.getElementById('arrowControls').classList.add('hidden');
+  setStep(4);
+  setMode('old');
+  document.getElementById('rainPtControls').classList.remove('hidden');
+  document.getElementById('stepInstruction').innerHTML =
+    '🔴 <strong>ขั้นตอน 4 — จุด A (เฟรมเก่า):</strong> ดูเฟรมแรกสุดของ GIF แล้วแตะตำแหน่งของก้อนฝนที่ต้องการติดตาม<br><small style="color:var(--text-dim)">เฟรมแรก = ~50 นาทีที่แล้ว</small>';
+  document.getElementById('canvasHint').textContent = 'แตะ 2 จุด: เฟรมเก่า (A) และเฟรมใหม่ (B)';
+  state.rainPhase = 'old';
+}
+
+function resetDirection() {
+  state.arrowStart = null;
+  state.arrowEnd = null;
+  document.getElementById('arrowControls').classList.add('hidden');
+  document.getElementById('leg-dir').style.display = 'none';
+  drawCanvas();
+}
+
+function confirmRainPoints() {
+  if (!state.oldRain || !state.newRain) return;
+  document.getElementById('rainPtControls').classList.add('hidden');
+  document.getElementById('sec-canvas').classList.add('hidden');
+  document.getElementById('sec-5').classList.remove('hidden');
+  setStep(5);
+}
+
+function resetRainPoints() {
+  state.oldRain = null;
+  state.newRain = null;
+  state.rainPhase = 'old';
+  document.getElementById('confirmRainBtn').disabled = true;
+  document.getElementById('leg-old').style.display = 'none';
+  document.getElementById('leg-new').style.display = 'none';
+  setMode('old');
+  document.getElementById('stepInstruction').innerHTML =
+    '🔴 <strong>ขั้นตอน 4 — จุด A (เฟรมเก่า):</strong> แตะตำแหน่งก้อนฝนในเฟรมแรกสุด';
+  drawCanvas();
+}
+
+// ============================================================
+// STEP 5: COLOR
+// ============================================================
+function selectColor(color, btn) {
+  document.querySelectorAll('.color-btn').forEach(b =>
+    b.classList.remove('selected-green','selected-yellow','selected-red'));
+  btn.classList.add('selected-' + color);
+  state.intensity = color;
+  document.getElementById('calcBtn').disabled = false;
+}
+
+// ============================================================
+// STEP 6: CALCULATE
+// ============================================================
+function calculate() {
+  const { userPt, arrowStart, arrowEnd, oldRain, newRain, intensity } = state;
+  if (!userPt || !arrowStart || !arrowEnd || !oldRain || !newRain || !intensity) return;
+
+  // 1. Speed: pixel distance between old→new rain / 50 min
+  const dRx = newRain.x - oldRain.x;
+  const dRy = newRain.y - oldRain.y;
+  const rainMoveDist = Math.sqrt(dRx * dRx + dRy * dRy);
+  const speed = rainMoveDist / RADAR_TIME_SPAN; // px/min
+
+  // 2. Distance from current rain position (newRain) to user
+  const dUx = userPt.x - newRain.x;
+  const dUy = userPt.y - newRain.y;
+  const distToUser = Math.sqrt(dUx * dUx + dUy * dUy);
+
+  // 3. Arrival time raw
+  const arrivalTime = speed > 0.1 ? distToUser / speed : 999;
+
+  // 4. Direction alignment: dot product of rain movement dir vs vector to user
+  const rainDirX = dRx / (rainMoveDist || 1);
+  const rainDirY = dRy / (rainMoveDist || 1);
+  const toUserLen = distToUser || 1;
+  const toUserX = dUx / toUserLen;
+  const toUserY = dUy / toUserLen;
+  const dot = rainDirX * toUserX + rainDirY * toUserY; // -1 to +1
+
+  // Also check arrow direction vs direction to user
+  const arrDx = arrowEnd.x - arrowStart.x;
+  const arrDy = arrowEnd.y - arrowStart.y;
+  const arrLen = Math.sqrt(arrDx*arrDx + arrDy*arrDy) || 1;
+  const arrX = arrDx / arrLen;
+  const arrY = arrDy / arrLen;
+  const dotArr = arrX * toUserX + arrY * toUserY;
+
+  // Combined alignment: average of both
+  const alignment = (dot + dotArr) / 2; // -1 to 1
+
+  // 5. Heuristic scoring
+  let prob = 30; // base
+
+  // Direction bonus (-30 to +40)
+  const dirBonus = Math.round(alignment * 35);
+  prob += dirBonus;
+
+  // Distance penalty (far = lower, close = higher)
+  // Normalize distance: 0–50px → close, 50–150px → mid, 150+ → far
+  let distScore = 0;
+  if (distToUser < 30) distScore = 30;
+  else if (distToUser < 80) distScore = 20;
+  else if (distToUser < 150) distScore = 10;
+  else if (distToUser < 250) distScore = 0;
+  else distScore = -10;
+  prob += distScore;
+
+  // Arrival time bonus
+  let timeScore = 0;
+  if (arrivalTime < 15) timeScore = 20;
+  else if (arrivalTime < 30) timeScore = 10;
+  else if (arrivalTime < 60) timeScore = 0;
+  else timeScore = -10;
+  prob += timeScore;
+
+  // Intensity bonus
+  const intensityBonus = { green: 10, yellow: 20, red: 35 }[intensity];
+  prob += intensityBonus;
+
+  // Clamp
+  prob = Math.min(95, Math.max(5, prob));
+
+  // Show result
+  showResult(prob, arrivalTime, {
+    alignment: Math.round(alignment * 100),
+    distToUser: Math.round(distToUser),
+    speed: speed.toFixed(2),
+    dirBonus, distScore, timeScore, intensityBonus,
+    arrivalTime: Math.round(arrivalTime),
+  });
+}
+
+function showResult(prob, arrivalTime, meta) {
+  document.getElementById('sec-5').classList.add('hidden');
+  document.getElementById('sec-6').classList.remove('hidden');
+  setStep(6);
+
+  const el = document.getElementById('resultPercent');
+  el.textContent = prob + '%';
+  el.className = 'result-percent ' + (prob < 40 ? 'low' : prob < 65 ? 'mid' : 'high');
+
+  const labels = [
+    [80, 'ฝนมีโอกาสสูงมากที่จะถึงคุณ ☔'],
+    [60, 'มีโอกาสค่อนข้างสูง — เตรียมร่มไว้เลย 🌂'],
+    [40, 'โอกาสปานกลาง — ดูท่าทีก่อน 🌦️'],
+    [0, 'โอกาสน้อย — น่าจะเคลื่อนที่ไปทางอื่น 🌤️'],
+  ];
+  document.getElementById('resultLabel').textContent =
+    labels.find(([min]) => prob >= min)[1];
+
+  const t = document.getElementById('resultTime');
+  const tl = document.getElementById('resultTimeLabel');
+  if (meta.arrivalTime > 120) {
+    t.textContent = '> 2 ชั่วโมง';
+    tl.textContent = 'หรือไม่ถึงเลย';
+  } else {
+    t.innerHTML = `<span style="font-size:40px">⏱</span> ~${meta.arrivalTime} นาที`;
+    tl.textContent = 'เวลาคาดว่าฝนจะถึง';
+  }
+
+  const rows = [
+    ['ความเร็วฝน', `${meta.speed} px/นาที`],
+    ['ระยะห่างจากฝน', `${meta.distToUser} px`],
+    ['ทิศทางตรงกัน', `${meta.alignment > 0 ? '+' : ''}${meta.alignment}% (${meta.dirBonus > 0 ? '+' : ''}${meta.dirBonus} คะแนน)`],
+    ['ระยะห่าง bonus', `${meta.distScore > 0 ? '+' : ''}${meta.distScore}`],
+    ['เวลามาถึง bonus', `${meta.timeScore > 0 ? '+' : ''}${meta.timeScore}`],
+    ['ความแรงฝน bonus', `+${meta.intensityBonus}`],
+  ];
+
+  document.getElementById('resultBreakdown').innerHTML =
+    '<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;font-weight:700">รายละเอียดการคำนวณ</div>' +
+    rows.map(([k, v]) =>
+      `<div class="breakdown-row"><span>${k}</span><span>${v}</span></div>`
+    ).join('');
+}
+
+// ============================================================
+// RESTART
+// ============================================================
+function restartAll() {
+  state = {
+    step: 1,
+    radarImg: state.radarImg, // keep image
+    canvasW: state.canvasW,
+    canvasH: state.canvasH,
+    userPt: null,
+    arrowStart: null, arrowEnd: null, arrowDrawing: false,
+    oldRain: null, newRain: null, rainPhase: 'old',
+    intensity: null,
+  };
+
+  document.getElementById('sec-6').classList.add('hidden');
+  document.getElementById('sec-5').classList.add('hidden');
+
+  if (state.radarImg) {
+    document.getElementById('sec-canvas').classList.remove('hidden');
+    // reset canvas UI
+    document.getElementById('confirmUserBtn').classList.add('hidden');
+    document.getElementById('arrowControls').classList.add('hidden');
+    document.getElementById('rainPtControls').classList.add('hidden');
+    document.getElementById('leg-old').style.display = 'none';
+    document.getElementById('leg-new').style.display = 'none';
+    document.getElementById('leg-dir').style.display = 'none';
+    document.getElementById('confirmRainBtn').disabled = true;
+    document.getElementById('stepInstruction').innerHTML =
+      '👆 <strong>ขั้นตอน 2:</strong> แตะบนภาพเรดาร์ที่ตำแหน่งบ้าน / ที่ทำงาน / จุดที่คุณต้องการตรวจ';
+    document.getElementById('canvasHint').textContent = 'แตะบนภาพเพื่อระบุตำแหน่งของคุณ';
+    setMode('user');
+    drawCanvas();
+    setStep(2);
+  } else {
+    document.getElementById('sec-1').classList.remove('hidden');
+    document.getElementById('loadBtn').disabled = false;
+    setStep(1);
+  }
+
+  document.querySelectorAll('.color-btn').forEach(b =>
+    b.classList.remove('selected-green','selected-yellow','selected-red'));
+  document.getElementById('calcBtn').disabled = true;
+}
+</script>
+</body>
+</html>
