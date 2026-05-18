@@ -577,11 +577,11 @@ function loadRadar() {
   img.onload = () => {
     document.getElementById('loadingBox').classList.add('hidden');
     state.radarImg = img;
-    initCanvas(img);
     document.getElementById('sec-1').classList.add('hidden');
     document.getElementById('sec-canvas').classList.remove('hidden');
     setStep(2);
     setMode('user');
+    requestAnimationFrame(() => requestAnimationFrame(() => initCanvas(img)));
   };
 
   img.onerror = () => {
@@ -615,11 +615,11 @@ function loadFromFile(input) {
   img.onload = () => {
     document.getElementById('loadingBox').classList.add('hidden');
     state.radarImg = img;
-    initCanvas(img);
     document.getElementById('sec-1').classList.add('hidden');
     document.getElementById('sec-canvas').classList.remove('hidden');
     setStep(2);
     setMode('user');
+    requestAnimationFrame(() => requestAnimationFrame(() => initCanvas(img)));
   };
   img.src = url;
 }
@@ -630,7 +630,10 @@ function loadFromFile(input) {
 function initCanvas(img) {
   const canvas = document.getElementById('radarCanvas');
   const wrap = document.getElementById('canvasWrap');
-  const displayW = wrap.clientWidth;
+  let displayW = wrap.clientWidth;
+  if (!displayW || displayW < 10) {
+    displayW = window.innerWidth - 36;
+  }
   const ratio = img.naturalHeight / img.naturalWidth;
   const displayH = displayW * ratio;
 
