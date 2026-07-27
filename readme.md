@@ -1,4 +1,3 @@
-
 ```markdown
 # 🌧️ ฝนมาหรือยัง? (Is Rain Coming?)
 
@@ -51,7 +50,6 @@
    git clone [https://github.com/YOUR_USERNAME/rain-radar.git](https://github.com/YOUR_USERNAME/rain-radar.git)
    cd rain-radar
 
-```
 
 2. **เปิดใช้งานบน Local:**
 เปิดไฟล์ `index.html` ผ่าน Web Browser ได้ทันที
@@ -67,7 +65,5 @@
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
-
-```
 
 ```
