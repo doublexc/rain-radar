@@ -4,9 +4,9 @@
 
 เว็บแอปพลิเคชันประเมินโอกาสและเวลาที่ฝนจะตกถึงตำแหน่งของคุณแบบเรียลไทม์ โดยประมวลผลจากภาพเรดาร์ตรวจจับฝนแอนิเมชัน (GIF) ของกรมอุตุนิยมวิทยา / กทม. ออกแบบมาให้รันเป็น **Static Web (GitHub Pages)** ได้ 100% โดยไม่ต้องเปิดเซิร์ฟเวอร์ Backend
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)
+![License](https://img.shields.io/badge/license-MIT-blue.png)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white.png)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black.png)
 
 ---
 
