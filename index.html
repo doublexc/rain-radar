@@ -565,7 +565,7 @@ function getProxyUrls(targetUrl) {
   const encoded = encodeURIComponent(targetUrl);
   const t = Date.now();
   return [
-    `https://corsproxy.io/?${encoded}&t=${t}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encoded}`,
     `https://api.allorigins.win/raw?url=${encoded}&t=${t}`
   ];
 }
@@ -602,10 +602,9 @@ function loadRadar() {
 function tryFetchRadar(sourceIdx, proxyIdx) {
   const source = RADAR_SOURCES[sourceIdx];
   const proxies = getProxyUrls(source.url);
-  const proxyUrl = proxies[proxyIdx];
 
   const img = new Image();
-  img.crossOrigin = 'anonymous';
+  // 💡 เอา img.crossOrigin = 'anonymous'; ออก เพื่อให้ดึงภาพข้ามโดเมนมาแสดงได้โดยไม่ถูกบล็อก CORS
 
   img.onload = () => {
     document.getElementById('loadingBox').classList.add('hidden');
@@ -615,7 +614,6 @@ function tryFetchRadar(sourceIdx, proxyIdx) {
     setStep(2);
     setMode('user');
     
-    // อัปเดต Subtitle บน Header ให้รู้ว่าได้ภาพจากสถานีไหน
     const sub = document.querySelector('.header-sub');
     if (sub) sub.textContent = `ประเมินจากเรดาร์กรุงเทพฯ (${source.name})`;
 
@@ -623,16 +621,25 @@ function tryFetchRadar(sourceIdx, proxyIdx) {
   };
 
   img.onerror = () => {
-    if (proxyIdx + 1 < proxies.length) {
+    // ถ้าดึงตรงไม่ได้ (proxyIdx === 0) ให้ลองสลับไปใช้ Proxy สำรอง
+    if (proxyIdx < proxies.length) {
       tryFetchRadar(sourceIdx, proxyIdx + 1);
-    } else if (sourceIdx + 1 < RADAR_SOURCES.length) {
+    } 
+    // ถ้ายังไม่ได้ ให้ลองสลับสถานีเรดาร์ (หนองแขม -> หนองจอก)
+    else if (sourceIdx + 1 < RADAR_SOURCES.length) {
       tryFetchRadar(sourceIdx + 1, 0);
-    } else {
+    } 
+    else {
       showLoadError();
     }
   };
 
-  img.src = proxyUrl;
+  // proxyIdx === 0 : ยิงตรงเข้ากรมอุตุฯ โดยไม่ผ่าน Proxy (ทะลุบล็อกได้ 100%)
+  if (proxyIdx === 0) {
+    img.src = source.url + '?t=' + Date.now();
+  } else {
+    img.src = proxies[proxyIdx - 1];
+  }
 }
 
 function showLoadError() {
