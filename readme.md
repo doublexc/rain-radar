@@ -1,6 +1,4 @@
 
----
-
 ```markdown
 # 🌧️ ฝนมาหรือยัง? (Is Rain Coming?)
 
