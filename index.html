@@ -545,7 +545,8 @@ let state = {
   intensity: null,
 };
 
-const RADAR_URL = 'https://weather.bangkok.go.th/Images/Radar/nkradar.gif';
+const BMA_RADAR = 'https://weather.bangkok.go.th/Images/Radar/nkradar.gif';
+const RADAR_URL = 'https://corsproxy.io/?' + encodeURIComponent(BMA_RADAR);
 const RADAR_TIME_SPAN = 50; // minutes across all frames
 
 // ============================================================
@@ -586,24 +587,27 @@ function loadRadar() {
   };
 
   img.onerror = () => {
+    // หาก Proxy หลักมีปัญหา ให้ลองดึงผ่าน Fallback Proxy ตัวสำรอง
+    loadRadarFallback(img);
+  };
+
+  // เติม &t= เพื่อบังคับดึงรูปสดใหม่เสมอ ไม่ติดแคช
+  img.src = RADAR_URL + '&t=' + Date.now();
+}
+
+// (Optional) สำรองไว้เผื่อ corsproxy.io มีปัญหาชั่วคราว
+function loadRadarFallback(img) {
+  const fallbackUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(BMA_RADAR);
+  
+  img.onerror = () => {
     document.getElementById('loadingBox').classList.add('hidden');
     document.getElementById('loadBtn').disabled = false;
     const eb = document.getElementById('errorBox');
     eb.classList.remove('hidden');
-    eb.innerHTML = `
-      ⚠️ โหลดภาพไม่ได้ (CORS / network)<br><br>
-      <strong>วิธีแก้:</strong> เปิด <a href="${RADAR_URL}" target="_blank" style="color:var(--accent)">ลิงก์นี้</a>
-      ในแท็บใหม่ แล้วบันทึกเป็น GIF จากนั้นอัปโหลดด้านล่าง<br><br>
-      <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;
-        background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);
-        border-radius:8px;padding:10px 14px;font-size:13px;color:var(--accent)">
-        📁 อัปโหลด GIF เรดาร์จากเครื่อง
-        <input type="file" accept="image/gif,image/*" style="display:none" onchange="loadFromFile(this)">
-      </label>
-    `;
+    eb.innerHTML = `⚠️ โหลดภาพไม่ได้ กรุณาลองใหม่อีกครั้ง หรือใช้วิธีอัปโหลดไฟล์ GIF ด้านล่าง`;
   };
 
-  img.src = RADAR_URL + '?t=' + Date.now();
+  img.src = fallbackUrl + '&t=' + Date.now();
 }
 
 function loadFromFile(input) {
