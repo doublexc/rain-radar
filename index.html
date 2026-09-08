@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>เรดาร์ฝนหนองแขม - วงรัศมีเตือนภัย</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
+
+    :root {
+      --bg: #0b111e;
+      --surface: #151f32;
+      --surface2: #1e2c47;
+      --border: #23395d;
+      --accent: #00d4ff;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --orange: #f97316;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --text-dim: #8ba0b8;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .header-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-icon { font-size: 26px; }
+    .header-title { font-size: 18px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+    .header-sub { font-size: 11px; color: var(--text-dim); }
+
+    .content {
+      flex: 1;
+      padding: 14px 16px;
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .btn {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: none;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all .2s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-gps {
+      background: linear-gradient(135deg, #0284c7, #00d4ff);
+      color: #04101e;
+    }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      flex: 0 0 auto;
+      padding: 12px 16px;
+    }
+
+    /* Legend Box */
+    .legend-bar {
+      display: flex;
+      justify-content: space-around;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-ring {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border-width: 2px;
+      border-style: solid;
+    }
+
+    /* Radar Viewport */
+    .radar-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      position: relative;
+    }
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #02050b;
+      border: 1px solid var(--border);
+      touch-action: none;
+    }
+    .canvas-wrap img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .canvas-wrap canvas {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      cursor: crosshair;
+    }
+
+    .hint-text {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 10px;
+    }
+
+    /* Status & Alerts */
+    .alert-box {
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .alert-warn {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .alert-info {
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      color: #93c5fd;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-title-wrap">
+      <div class="header-icon">🌧️</div>
+      <div>
+        <div class="header-title">เรดาร์เตือนฝนหนองแขม</div>
+        <div class="header-sub">รัศมีตรวจวัด ~120 กม. (ภาพวน 50 นาทีล่าสุด)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div id="alertBox" class="alert-box alert-warn"></div>
+
+    <div class="controls">
+      <button class="btn btn-gps" id="gpsBtn" onclick="requestGPS()">
+        <span id="gpsIcon">📍</span>
+        <span id="gpsText">ดึงตำแหน่งจาก GPS</span>
+      </button>
+      <button class="btn btn-secondary" onclick="reloadRadar()" title="โหลดภาพใหม่">
+        🔄 รีเฟรชภาพ
+      </button>
+    </div>
+
+    <div class="legend-bar">
+      <div class="legend-item">
+        <div class="legend-ring" style="border-color: var(--red); background: rgba(239,68,68,0.2);"></div>
+        <span>5 กม. (ประชิด)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-ring" style="border-color: var(--orange); background: rgba(249,115,22,0.2);"></div>
+        <span>10 กม. (เฝ้าระวัง)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-ring" style="border-color: var(--yellow); background: rgba(234,179,8,0.2);"></div>
+        <span>20 กม. (สังเกตการณ์)</span>
+      </div>
+    </div>
+
+    <div class="radar-card">
+      <div class="canvas-wrap" id="canvasWrap">
+        <img id="radarImg" alt="เรดาร์หนองแขม">
+        <canvas id="overlayCanvas"></canvas>
+      </div>
+      <div class="hint-text" id="statusHint">
+        👆 แตะบนภาพเพื่อปักหมุดเอง หรือกดปุ่ม GPS ด้านบน
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ============================================================
+    // CONFIGURATION & RADAR BOUNDS
+    // ============================================================
+    // สถานีเรดาร์หนองแขม: Lat 13.7056, Lon 100.3547 (ครอบคลุมรัศมีตรวจวัด 120 กม.)
+    const RADAR_CENTER = { lat: 13.7056, lon: 100.3547 };
+    const RADAR_COVERAGE_KM = 120; // รัศมีถึงขอบวงกลมเรดาร์
+    
+    // ขอบเขตพิกัดโดยประมาณของรูปภาพ (Bounding Box: 800x800 px)
+    const BOUNDS = {
+      latMax: 14.85,
+      latMin: 12.56,
+      lonMin: 99.18,
+      lonMax: 101.53
+    };
+
+    const RADAR_URL = 'https://weather.tmd.go.th/pic_bmankLoop.gif';
+    const PROXY_LIST = [
+      (url) => url + '?t=' + Date.now(),
+      (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+      (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`
+    ];
+
+    let state = {
+      userPos: null,      // { x, y } in canvas coordinate space
+      userLatLon: null,   // { lat, lon }
+      imgWidth: 800,
+      imgHeight: 800,
+      pxPerKm: 3.33       // สัดส่วนพิกเซลต่อกิโลเมตร (คำนวณหลังโหลดภาพ)
+    };
+
+    const canvas = document.getElementById('overlayCanvas');
+    const ctx = canvas.getContext('2d');
+    const radarImg = document.getElementById('radarImg');
+    const wrap = document.getElementById('canvasWrap');
+
+    // ============================================================
+    // INITIALIZATION & IMAGE LOADING
+    // ============================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadRadarImage(0);
+      setupCanvasEvents();
+    });
+
+    function loadRadarImage(proxyIndex) {
+      if (proxyIndex >= PROXY_LIST.length) {
+        showAlert('ไม่สามารถโหลดภาพเรดาร์ได้ในขณะนี้ กรุณากดปุ่มรีเฟรชอีกครั้ง');
+        return;
+      }
+
+      const img = new Image();
+      const targetSrc = PROXY_LIST[proxyIndex](RADAR_URL);
+
+      img.onload = () => {
+        radarImg.src = targetSrc;
+        state.imgWidth = img.naturalWidth || 800;
+        state.imgHeight = img.naturalHeight || 800;
+
+        // คำนวณสเกลพิกเซลต่อกิโลเมตรจากมิติของภาพจริง
+        // ภาพ 800x800 แสดงเส้นผ่านศูนย์กลาง 240 กม. (~400px = 120km)
+        state.pxPerKm = (state.imgWidth / 2) / RADAR_COVERAGE_KM;
+
+        fitCanvas();
+        drawOverlay();
+      };
+
+      img.onerror = () => {
+        // Fallback ไปใช้ Proxy ถัดไป
+        loadRadarImage(proxyIndex + 1);
+      };
+
+      img.src = targetSrc;
+    }
+
+    function reloadRadar() {
+      hideAlert();
+      loadRadarImage(0);
+    }
+
+    function fitCanvas() {
+      const containerWidth = wrap.clientWidth;
+      const ratio = state.imgHeight / state.imgWidth;
+      const displayHeight = containerWidth * ratio;
+
+      canvas.width = state.imgWidth;
+      canvas.height = state.imgHeight;
+      wrap.style.height = displayHeight + 'px';
+      drawOverlay();
+    }
+
+    window.addEventListener('resize', fitCanvas);
+
+    // ============================================================
+    // CANVAS EVENTS (MANUAL PINNING)
+    // ============================================================
+    function setupCanvasEvents() {
+      const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        return {
+          x: (clientX - rect.left) * scaleX,
+          y: (clientY - rect.top) * scaleY
+        };
+      };
+
+      const handlePointer = (e) => {
+        if (e.cancelable) e.preventDefault();
+        hideAlert();
+        state.userPos = getPos(e);
+        state.userLatLon = null; // ปักเองไม่ได้อิง GPS
+        drawOverlay();
+        document.getElementById('statusHint').textContent = '📍 ปักหมุดตำแหน่งของคุณแล้ว (แตะเพื่อย้ายตำแหน่งได้)';
+      };
+
+      canvas.addEventListener('touchstart', handlePointer, { passive: false });
+      canvas.addEventListener('mousedown', handlePointer);
+    }
+
+    // ============================================================
+    // GEOLOCATION (GPS)
+    // ============================================================
+    function requestGPS() {
+      hideAlert();
+
+      if (!navigator.geolocation) {
+        showAlert('เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง GPS');
+        return;
+      }
+
+      const btn = document.getElementById('gpsBtn');
+      const icon = document.getElementById('gpsIcon');
+      const text = document.getElementById('gpsText');
+
+      btn.disabled = true;
+      icon.innerHTML = '<div class="spinner"></div>';
+      text.textContent = 'กำลังค้นหาตำแหน่ง...';
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          btn.disabled = false;
+          icon.innerHTML = '📍';
+          text.textContent = 'ดึงตำแหน่งจาก GPS';
+
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          // ตรวจสอบว่าพิกัดอยู่ในขอบเขตภาพเรดาร์หนองแขมหรือไม่
+          if (lat < BOUNDS.latMin || lat > BOUNDS.latMax || lon < BOUNDS.lonMin || lon > BOUNDS.lonMax) {
+            showAlert('ตำแหน่งของคุณอยู่นอกขอบเขตเรดาร์หนองแขม');
+            return;
+          }
+
+          // แปลง Lat/Lon -> Pixel บน Canvas
+          const x = ((lon - BOUNDS.lonMin) / (BOUNDS.lonMax - BOUNDS.lonMin)) * state.imgWidth;
+          const y = ((BOUNDS.latMax - lat) / (BOUNDS.latMax - BOUNDS.latMin)) * state.imgHeight;
+
+          state.userPos = { x, y };
+          state.userLatLon = { lat, lon };
+          drawOverlay();
+
+          document.getElementById('statusHint').textContent = `📍 ล็อกพิกัด GPS แล้ว (${lat.toFixed(3)}, ${lon.toFixed(3)})`;
+        },
+        (error) => {
+          btn.disabled = false;
+          icon.innerHTML = '📍';
+          text.textContent = 'ดึงตำแหน่งจาก GPS';
+
+          let msg = 'ไม่สามารถดึงตำแหน่ง GPS ได้';
+          if (error.code === error.PERMISSION_DENIED) {
+            msg = 'กรุณาอนุญาตการเข้าถึงตำแหน่ง (Location Permission) ในเบราว์เซอร์';
+          }
+          showAlert(msg);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    // ============================================================
+    // DRAWING: RANGE RINGS & USER PIN
+    // ============================================================
+    function drawOverlay() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!state.userPos) return;
+
+      const { x, y } = state.userPos;
+      const pxPerKm = state.pxPerKm;
+
+      // นิยาม 3 วงรัศมี: 20 กม. (เหลือง), 10 กม. (ส้ม), 5 กม. (แดง)
+      const rings = [
+        { km: 20, color: '#eab308', fill: 'rgba(234, 179, 8, 0.08)', label: '20 กม.' },
+        { km: 10, color: '#f97316', fill: 'rgba(249, 115, 22, 0.12)', label: '10 กม.' },
+        { km: 5,  color: '#ef4444', fill: 'rgba(239, 68, 68, 0.18)', label: '5 กม.' }
+      ];
+
+      // วาดวงรัศมีจากวงใหญ่ไปวงเล็ก
+      rings.forEach(ring => {
+        const radius = ring.km * pxPerKm;
+
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = ring.fill;
+        ctx.fill();
+        ctx.strokeStyle = ring.color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]); // เส้นประ
+        ctx.stroke();
+        ctx.setLineDash([]); // รีเซ็ตเส้นทึบ
+
+        // ป้ายกำกับระยะ
+        ctx.font = 'bold 11px Sarabun';
+        ctx.fillStyle = ring.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(ring.label, x, y - radius - 3);
+      });
+
+      // วาดหมุดจุดศูนย์กลางตัวผู้ใช้
+      // วงแหวนสะท้อนรอบหมุด
+      ctx.beginPath();
+      ctx.arc(x, y, 9, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 212, 255, 0.4)';
+      ctx.fill();
+
+      // จุดหมุดแกนกลาง
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#00d4ff';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // ============================================================
+    // UI HELPERS
+    // ============================================================
+    function showAlert(msg) {
+      const box = document.getElementById('alertBox');
+      box.textContent = msg;
+      box.style.display = 'block';
+    }
+
+    function hideAlert() {
+      const box = document.getElementById('alertBox');
+      box.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
