@@ -254,19 +254,15 @@
 
   <script>
     // ============================================================
-    // CONFIGURATION & RADAR CALIBRATION (DUAL-AXIS CALIBRATED)
+    // CONFIGURATION & RADAR CALIBRATION (960x800 TRUE RESOLUTION)
     // ============================================================
-    // ปรับ Lon จาก 100.6070 เป็น 100.4721 เพื่อดึงแกน X ไปลงพิกเซล 587 พอดี
-    const RADAR_STATION = { lat: 13.7094, lon: 100.4721 };
-    const RADAR_CENTER_PX = { x: 483, y: 399 }; 
-
-    // สเกลระยะคงเดิม (แกน Y ตรงแล้ว)
-    const KM_PER_PX_X = 0.3189;
-    const KM_PER_PX_Y = 0.3285;
-
-    // สำหรับวงรัศมีเตือนภัย
-    const KM_PER_PX_AVG = (KM_PER_PX_X + KM_PER_PX_Y) / 2;
-    const PX_PER_KM = 1 / KM_PER_PX_AVG;
+    // สถานีเรดาร์หนองแขม
+    const RADAR_STATION = { lat: 13.7056, lon: 100.3547 };
+    
+    // จุดกึ่งกลางภาพขนาด 960x800 พิกเซล
+    const RADAR_CENTER_PX = { x: 480, y: 400 }; 
+    const KM_PER_PX = 120 / 365; // ~0.3288 กม./พิกเซล (ทรงกลมสมมาตรเท่ากันทั้ง X และ Y)
+    const PX_PER_KM = 1 / KM_PER_PX;
 
     const RADAR_URL = 'https://weather.tmd.go.th/pic_bmankLoop.gif';
     const PROXY_LIST = [
@@ -278,24 +274,20 @@
     let state = {
       userPos: null,
       userLatLon: null,
-      imgWidth: 800,
-      imgHeight: 800,
+      imgWidth: 960,  // ปรับความกว้างเป็น 960
+      imgHeight: 800, // ปรับความสูงเป็น 800
       pxPerKm: PX_PER_KM
     };
 
-    const canvas = document.getElementById('overlayCanvas');
-    const ctx = canvas.getContext('2d');
-    const radarImg = document.getElementById('radarImg');
-
-    // --- ฟังก์ชันแปลงพิกัดแบบแยกแกน X และ Y ---
+    // --- ฟังก์ชันแปลงพิกัดกลับสู่สมมาตรทรงกลม 1:1 ---
     function latLonToPixel(lat, lon) {
       const dLatKm = (lat - RADAR_STATION.lat) * 111.32;
       const avgLatRad = ((lat + RADAR_STATION.lat) / 2) * (Math.PI / 180);
       const dLonKm = (lon - RADAR_STATION.lon) * 111.32 * Math.cos(avgLatRad);
 
       return {
-        x: RADAR_CENTER_PX.x + (dLonKm / KM_PER_PX_X),
-        y: RADAR_CENTER_PX.y - (dLatKm / KM_PER_PX_Y)
+        x: RADAR_CENTER_PX.x + (dLonKm / KM_PER_PX),
+        y: RADAR_CENTER_PX.y - (dLatKm / KM_PER_PX)
       };
     }
 
@@ -303,8 +295,8 @@
       const dxPx = x - RADAR_CENTER_PX.x;
       const dyPx = RADAR_CENTER_PX.y - y;
 
-      const dLonKm = dxPx * KM_PER_PX_X;
-      const dLatKm = dyPx * KM_PER_PX_Y;
+      const dLonKm = dxPx * KM_PER_PX;
+      const dLatKm = dyPx * KM_PER_PX;
 
       const lat = RADAR_STATION.lat + (dLatKm / 111.32);
       const avgLatRad = ((lat + RADAR_STATION.lat) / 2) * (Math.PI / 180);
@@ -329,7 +321,7 @@
 
       img.onload = () => {
         radarImg.src = targetSrc;
-        state.imgWidth = img.naturalWidth || 800;
+        state.imgWidth = img.naturalWidth || 960;
         state.imgHeight = img.naturalHeight || 800;
         canvas.width = state.imgWidth;
         canvas.height = state.imgHeight;
