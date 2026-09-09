@@ -259,13 +259,11 @@
     const RADAR_STATION = { lat: 13.7094, lon: 100.6070 };
     const RADAR_CENTER_PX = { x: 483, y: 399 }; 
 
-    // แยกสเกลอิสระระหว่างแกน X และแกน Y เพื่อชดเชยการยืดของแผนที่
-    // แกน Y: ระยะทางแนวดิ่ง ~37.78 กม. ตกที่ระยะ 115 พิกเซล -> ~0.3285 กม./พิกเซล
-    // แกน X: ระยะทางแนวนอน ~33.17 กม. ตกที่ระยะ 104 พิกเซล -> ~0.3189 กม./พิกเซล
+    // สเกลแยกแกน X และแกน Y
     const KM_PER_PX_X = 0.3189;
     const KM_PER_PX_Y = 0.3285;
 
-    // สำหรับคำนวณวงรัศมีเตือนภัย (ใช้ค่าเฉลี่ย)
+    // สำหรับวงรัศมีเตือนภัย
     const KM_PER_PX_AVG = (KM_PER_PX_X + KM_PER_PX_Y) / 2;
     const PX_PER_KM = 1 / KM_PER_PX_AVG;
 
@@ -283,6 +281,10 @@
       imgHeight: 800,
       pxPerKm: PX_PER_KM
     };
+
+    const canvas = document.getElementById('overlayCanvas');
+    const ctx = canvas.getContext('2d');
+    const radarImg = document.getElementById('radarImg');
 
     // --- ฟังก์ชันแปลงพิกัดแบบแยกแกน X และ Y ---
     function latLonToPixel(lat, lon) {
@@ -302,35 +304,6 @@
 
       const dLonKm = dxPx * KM_PER_PX_X;
       const dLatKm = dyPx * KM_PER_PX_Y;
-
-      const lat = RADAR_STATION.lat + (dLatKm / 111.32);
-      const avgLatRad = ((lat + RADAR_STATION.lat) / 2) * (Math.PI / 180);
-      const lon = RADAR_STATION.lon + (dLonKm / (111.32 * Math.cos(avgLatRad)));
-
-      return { lat, lon };
-    }
-
-    const canvas = document.getElementById('overlayCanvas');
-    const ctx = canvas.getContext('2d');
-    const radarImg = document.getElementById('radarImg');
-
-    function latLonToPixel(lat, lon) {
-      const dLatKm = (lat - RADAR_STATION.lat) * 111.32;
-      const avgLatRad = ((lat + RADAR_STATION.lat) / 2) * (Math.PI / 180);
-      const dLonKm = (lon - RADAR_STATION.lon) * 111.32 * Math.cos(avgLatRad);
-
-      return {
-        x: RADAR_CENTER_PX.x + (dLonKm / KM_PER_PX),
-        y: RADAR_CENTER_PX.y - (dLatKm / KM_PER_PX)
-      };
-    }
-
-    function pixelToLatLon(x, y) {
-      const dxPx = x - RADAR_CENTER_PX.x;
-      const dyPx = RADAR_CENTER_PX.y - y;
-
-      const dLonKm = dxPx * KM_PER_PX;
-      const dLatKm = dyPx * KM_PER_PX;
 
       const lat = RADAR_STATION.lat + (dLatKm / 111.32);
       const avgLatRad = ((lat + RADAR_STATION.lat) / 2) * (Math.PI / 180);
@@ -374,7 +347,6 @@
       loadRadarImage(0);
     }
 
-    // รองรับการแตะทั้ง Mouse และ Touch ด้วย pointerdown
     function setupCanvasEvents() {
       canvas.addEventListener('pointerdown', (e) => {
         e.preventDefault();
@@ -426,14 +398,13 @@
 
           const pixelPos = latLonToPixel(lat, lon);
 
-       // ตรวจสอบว่าพิกัดหลุดรัศมีตรวจวัดของเรดาร์หรือไม่ (120 กม. ตามสเกลจริง)
           const distFromCenterPx = Math.sqrt(
             Math.pow(pixelPos.x - RADAR_CENTER_PX.x, 2) + 
             Math.pow(pixelPos.y - RADAR_CENTER_PX.y, 2)
           );
 
-          // 120 กม. / 0.3394 = ~354 พิกเซล
-          if (distFromCenterPx > (120 / KM_PER_PX)) {
+          // ตรวจสอบระยะหลุด 120 กม. (ใช้ KM_PER_PX_AVG แทนตัวแปรเดิมที่หายไป)
+          if (distFromCenterPx > (120 / KM_PER_PX_AVG)) {
             showAlert('ตำแหน่งของคุณอยู่นอกขอบเขตตรวจวัดของเรดาร์ (เกิน 120 กม.)');
             return;
           }
