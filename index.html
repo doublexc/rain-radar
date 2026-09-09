@@ -256,10 +256,11 @@
     // ============================================================
     // CONFIGURATION & RADAR CALIBRATION (DUAL-AXIS CALIBRATED)
     // ============================================================
-    const RADAR_STATION = { lat: 13.7094, lon: 100.6070 };
+    // ปรับ Lon จาก 100.6070 เป็น 100.4721 เพื่อดึงแกน X ไปลงพิกเซล 587 พอดี
+    const RADAR_STATION = { lat: 13.7094, lon: 100.4721 };
     const RADAR_CENTER_PX = { x: 483, y: 399 }; 
 
-    // สเกลแยกแกน X และแกน Y
+    // สเกลระยะคงเดิม (แกน Y ตรงแล้ว)
     const KM_PER_PX_X = 0.3189;
     const KM_PER_PX_Y = 0.3285;
 
