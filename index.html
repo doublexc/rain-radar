@@ -261,20 +261,17 @@
   </div>
 
   <script>
+        // ============================================================
+    // CONFIGURATION & RADAR CALIBRATION (POLAR PROJECTION)
     // ============================================================
-    // CONFIGURATION & RADAR BOUNDS
-    // ============================================================
-    // สถานีเรดาร์หนองแขม: Lat 13.7056, Lon 100.3547 (ครอบคลุมรัศมีตรวจวัด 120 กม.)
-    const RADAR_CENTER = { lat: 13.7056, lon: 100.3547 };
-    const RADAR_COVERAGE_KM = 120; // รัศมีถึงขอบวงกลมเรดาร์
+    // สถานีเรดาร์หนองแขม
+    const RADAR_STATION = { lat: 13.7056, lon: 100.3547 };
+    const RADAR_COVERAGE_KM = 120; // รัศมีตรวจวัด 120 กม.
     
-    // ขอบเขตพิกัดโดยประมาณของรูปภาพ (Bounding Box: 800x800 px)
-    const BOUNDS = {
-      latMax: 14.85,
-      latMin: 12.56,
-      lonMin: 99.18,
-      lonMax: 101.53
-    };
+    // พารามิเตอร์เทียบพิกเซลบนภาพ 800x800 px
+    const RADAR_CENTER_PX = { x: 400, y: 400 }; 
+    const KM_PER_PX = 120 / 365; // รัศมี 120 กม. กวาดออกไปราว 365 px
+    const PX_PER_KM = 1 / KM_PER_PX;
 
     const RADAR_URL = 'https://weather.tmd.go.th/pic_bmankLoop.gif';
     const PROXY_LIST = [
@@ -284,17 +281,38 @@
     ];
 
     let state = {
-      userPos: null,      // { x, y } in canvas coordinate space
+      userPos: null,      // { x, y }
       userLatLon: null,   // { lat, lon }
       imgWidth: 800,
       imgHeight: 800,
-      pxPerKm: 3.33       // สัดส่วนพิกเซลต่อกิโลเมตร (คำนวณหลังโหลดภาพ)
+      pxPerKm: PX_PER_KM
     };
 
-    const canvas = document.getElementById('overlayCanvas');
-    const ctx = canvas.getContext('2d');
-    const radarImg = document.getElementById('radarImg');
-    const wrap = document.getElementById('canvasWrap');
+    // --- ฟังก์ชันแปลงพิกัด (Lat/Lon <-> Pixel) ---
+    function latLonToPixel(lat, lon) {
+      const dLatKm = (lat - RADAR_STATION.lat) * 111.32;
+      const avgLatRad = ((lat + RADAR_STATION.lat) / 2) * (Math.PI / 180);
+      const dLonKm = (lon - RADAR_STATION.lon) * 111.32 * Math.cos(avgLatRad);
+
+      return {
+        x: RADAR_CENTER_PX.x + (dLonKm / KM_PER_PX),
+        y: RADAR_CENTER_PX.y - (dLatKm / KM_PER_PX)
+      };
+    }
+
+    function pixelToLatLon(x, y) {
+      const dxPx = x - RADAR_CENTER_PX.x;
+      const dyPx = RADAR_CENTER_PX.y - y;
+
+      const dLonKm = dxPx * KM_PER_PX;
+      const dLatKm = dyPx * KM_PER_PX;
+
+      const lat = RADAR_STATION.lat + (dLatKm / 111.32);
+      const avgLatRad = ((lat + RADAR_STATION.lat) / 2) * (Math.PI / 180);
+      const lon = RADAR_STATION.lon + (dLonKm / (111.32 * Math.cos(avgLatRad)));
+
+      return { lat, lon };
+    }
 
     // ============================================================
     // INITIALIZATION & IMAGE LOADING
@@ -355,7 +373,7 @@
       // ============================================================
     // CANVAS EVENTS (MANUAL PINNING)
     // ============================================================
-    function setupCanvasEvents() {
+        function setupCanvasEvents() {
       const getPos = (e) => {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
@@ -376,28 +394,26 @@
         const pos = getPos(e);
         state.userPos = pos;
 
-        // คำนวณย้อนกลับจาก Pixel -> Lat/Lon ตามขอบเขต BOUNDS
-        const lon = BOUNDS.lonMin + (pos.x / state.imgWidth) * (BOUNDS.lonMax - BOUNDS.lonMin);
-        const lat = BOUNDS.latMax - (pos.y / state.imgHeight) * (BOUNDS.latMax - BOUNDS.latMin);
-        state.userLatLon = { lat, lon };
+        // เรียกใช้ฟังก์ชันแปลง Pixel -> Lat/Lon แบบใหม่
+        const coords = pixelToLatLon(pos.x, pos.y);
+        state.userLatLon = coords;
 
         drawOverlay();
 
-        // แสดงพิกัดและค่าพิกเซลใต้รูป
         document.getElementById('statusHint').innerHTML = 
-          `📍 ปักหมุดที่: <strong>Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}</strong> ` +
+          `📍 ปักหมุดที่: <strong>Lat ${coords.lat.toFixed(4)}, Lon ${coords.lon.toFixed(4)}</strong> ` +
           `<span style="color: var(--text-dim); font-size: 11px;">(Pixel: X=${Math.round(pos.x)}, Y=${Math.round(pos.y)})</span>`;
       };
 
-      // ผูก Event ให้ Canvas สามารถแตะปักหมุดได้
       canvas.addEventListener('touchstart', handlePointer, { passive: false });
       canvas.addEventListener('mousedown', handlePointer);
     }
 
+
     // ============================================================
     // GEOLOCATION (GPS)
     // ============================================================
-    function requestGPS() {
+        function requestGPS() {
       hideAlert();
 
       if (!navigator.geolocation) {
@@ -422,21 +438,27 @@
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
 
-          // ตรวจสอบว่าพิกัดอยู่ในขอบเขตภาพเรดาร์หนองแขมหรือไม่
-          if (lat < BOUNDS.latMin || lat > BOUNDS.latMax || lon < BOUNDS.lonMin || lon > BOUNDS.lonMax) {
-            showAlert('ตำแหน่งของคุณอยู่นอกขอบเขตเรดาร์หนองแขม');
+          // แปลงพิกัดจริงเป็นพิกเซล
+          const pixelPos = latLonToPixel(lat, lon);
+
+          // ตรวจสอบว่าพิกัดหลุดรัศมีตรวจวัดของเรดาร์หรือไม่ (120 กม. = 365 px จากจุดศูนย์กลาง)
+          const distFromCenterPx = Math.sqrt(
+            Math.pow(pixelPos.x - RADAR_CENTER_PX.x, 2) + 
+            Math.pow(pixelPos.y - RADAR_CENTER_PX.y, 2)
+          );
+
+          if (distFromCenterPx > 365) {
+            showAlert('ตำแหน่งของคุณอยู่นอกขอบเขตเรดาร์หนองแขม (เกิน 120 กม.)');
             return;
           }
 
-          // แปลง Lat/Lon -> Pixel บน Canvas
-          const x = ((lon - BOUNDS.lonMin) / (BOUNDS.lonMax - BOUNDS.lonMin)) * state.imgWidth;
-          const y = ((BOUNDS.latMax - lat) / (BOUNDS.latMax - BOUNDS.latMin)) * state.imgHeight;
-
-          state.userPos = { x, y };
+          state.userPos = pixelPos;
           state.userLatLon = { lat, lon };
           drawOverlay();
 
-          document.getElementById('statusHint').textContent = `📍 ล็อกพิกัด GPS แล้ว (${lat.toFixed(3)}, ${lon.toFixed(3)})`;
+          document.getElementById('statusHint').innerHTML = 
+            `📍 ล็อกพิกัด GPS แล้ว: <strong>Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}</strong> ` +
+            `<span style="color: var(--text-dim); font-size: 11px;">(Pixel: X=${Math.round(pixelPos.x)}, Y=${Math.round(pixelPos.y)})</span>`;
         },
         (error) => {
           btn.disabled = false;
@@ -451,7 +473,8 @@
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
-    }
+        }
+    
 
     // ============================================================
     // DRAWING: RANGE RINGS & USER PIN
