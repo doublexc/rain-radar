@@ -127,18 +127,27 @@
     .canvas-wrap {
       position: relative;
       width: 100%;
+      aspect-ratio: 960 / 800; /* กำหนดสัดส่วนตายตัว ป้องกันกรอบภาพแฟบ */
+      min-height: 280px;
       border-radius: 10px;
       overflow: hidden;
       background: #02050b;
       border: 1px solid var(--border);
       touch-action: none;
-      line-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .canvas-wrap img {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
-      height: auto;
-      display: block;
+      height: 100%;
+      object-fit: fill;
+      display: none; /* ซ่อนไว้ก่อน โหลดเสร็จค่อยแสดง */
       pointer-events: none;
+      z-index: 1;
     }
     .canvas-wrap canvas {
       position: absolute;
@@ -148,7 +157,17 @@
       height: 100%;
       cursor: crosshair;
       touch-action: none;
-      z-index: 10;
+      z-index: 2;
+    }
+
+    .loading-overlay {
+      color: var(--text-dim);
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      z-index: 0;
     }
 
     .hint-text {
@@ -174,10 +193,10 @@
     }
 
     .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(0,0,0,0.2);
-      border-top-color: #000;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(0,212,255,0.2);
+      border-top-color: var(--accent);
       border-radius: 50%;
       animation: spin .7s linear infinite;
     }
@@ -242,6 +261,10 @@
 
     <div class="radar-card">
       <div class="canvas-wrap" id="canvasWrap">
+        <div class="loading-overlay" id="loadingRadar">
+          <div class="spinner"></div>
+          <div>กำลังโหลดภาพเรดาร์สด...</div>
+        </div>
         <img id="radarImg" alt="เรดาร์หนองแขม">
         <canvas id="overlayCanvas"></canvas>
       </div>
@@ -279,8 +302,8 @@
     const canvas = document.getElementById('overlayCanvas');
     const ctx = canvas.getContext('2d');
     const radarImg = document.getElementById('radarImg');
+    const loadingBox = document.getElementById('loadingRadar');
 
-    // ฟังก์ชันแปลงพิกัด (Lat/Lon <-> Pixel)
     function latLonToPixel(lat, lon) {
       const dLatKm = (lat - RADAR_STATION.lat) * 111.32;
       const avgLatRad = ((lat + RADAR_STATION.lat) / 2) * (Math.PI / 180);
@@ -307,12 +330,15 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      canvas.width = state.imgWidth;
+      canvas.height = state.imgHeight;
       loadRadarImage(0);
       setupCanvasEvents();
     });
 
     function loadRadarImage(proxyIndex) {
       if (proxyIndex >= PROXY_LIST.length) {
+        if (loadingBox) loadingBox.innerHTML = '⚠️ โหลดภาพไม่สำเร็จ กรุณากดรีเฟรช';
         showAlert('ไม่สามารถโหลดภาพเรดาร์ได้ในขณะนี้ กรุณากดปุ่มรีเฟรชอีกครั้ง');
         return;
       }
@@ -322,6 +348,9 @@
 
       img.onload = () => {
         radarImg.src = targetSrc;
+        radarImg.style.display = 'block';
+        if (loadingBox) loadingBox.style.display = 'none';
+
         state.imgWidth = img.naturalWidth || 960;
         state.imgHeight = img.naturalHeight || 800;
         canvas.width = state.imgWidth;
@@ -338,6 +367,10 @@
 
     function reloadRadar() {
       hideAlert();
+      if (loadingBox) {
+        loadingBox.style.display = 'flex';
+        loadingBox.innerHTML = '<div class="spinner"></div><div>กำลังโหลดภาพเรดาร์สด...</div>';
+      }
       loadRadarImage(0);
     }
 
@@ -360,7 +393,7 @@
         drawOverlay();
 
         document.getElementById('statusHint').innerHTML = 
-          `📍 ปักหมุดที่: <strong>Lat ${coords.lat.toFixed(4)}, Lon${coords.lon.toFixed(4)}</strong> ` +
+          `📍 ปักหมุดที่: <strong>Lat ${coords.lat.toFixed(4)}, Lon ${coords.lon.toFixed(4)}</strong> ` +
           `<span style="color: var(--text-dim); font-size: 11px;">(Pixel: X=${Math.round(x)}, Y=${Math.round(y)})</span>`;
       });
     }
@@ -397,7 +430,6 @@
             Math.pow(pixelPos.y - RADAR_CENTER_PX.y, 2)
           );
 
-          // ตรวจสอบระยะตรวจวัด 120 กม. โดยอิง KM_PER_PX
           if (distFromCenterPx > (120 / KM_PER_PX)) {
             showAlert('ตำแหน่งของคุณอยู่นอกขอบเขตตรวจวัดของเรดาร์ (เกิน 120 กม.)');
             return;
@@ -408,5 +440,85 @@
           drawOverlay();
 
           document.getElementById('statusHint').innerHTML = 
-            `📍 ล็อกพิกัด GPS แล้ว: <strong>Lat ${lat.toFixed(4)}, Lon${lon.toFixed(4)}</strong> ` +
-            `<span style
+            `📍 ล็อกพิกัด GPS แล้ว: <strong>Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}</strong> ` +
+            `<span style="color: var(--text-dim); font-size: 11px;">(Pixel: X=${Math.round(pixelPos.x)}, Y=${Math.round(pixelPos.y)})</span>`;
+        },
+        (error) => {
+          btn.disabled = false;
+          icon.innerHTML = '📍';
+          text.textContent = 'ดึงตำแหน่งจาก GPS';
+
+          let msg = 'ไม่สามารถดึงตำแหน่ง GPS ได้';
+          if (error.code === error.PERMISSION_DENIED) {
+            msg = 'เบราว์เซอร์ถูกบล็อกสิทธิ์ตำแหน่ง (ต้องเปิดผ่าน HTTPS หรือ GitHub Pages เท่านั้น)';
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            msg = 'ไม่พบสัญญาณ GPS กรุณาแตะปักหมุดเองบนภาพ';
+          }
+          showAlert(msg);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function drawOverlay() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!state.userPos) return;
+
+      const { x, y } = state.userPos;
+      const pxPerKm = state.pxPerKm;
+
+      const rings = [
+        { km: 20, color: '#eab308', fill: 'rgba(234, 179, 8, 0.08)', label: '20 กม.' },
+        { km: 10, color: '#f97316', fill: 'rgba(249, 115, 22, 0.12)', label: '10 กม.' },
+        { km: 5,  color: '#ef4444', fill: 'rgba(239, 68, 68, 0.18)', label: '5 กม.' }
+      ];
+
+      rings.forEach(ring => {
+        const radius = ring.km * pxPerKm;
+
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = ring.fill;
+        ctx.fill();
+        ctx.strokeStyle = ring.color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.font = 'bold 11px Sarabun';
+        ctx.fillStyle = ring.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(ring.label, x, y - radius - 3);
+      });
+
+      // หมุดตำแหน่งผู้ใช้
+      ctx.beginPath();
+      ctx.arc(x, y, 9, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 212, 255, 0.4)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#00d4ff';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function showAlert(msg) {
+      const box = document.getElementById('alertBox');
+      box.textContent = msg;
+      box.style.display = 'block';
+    }
+
+    function hideAlert() {
+      const box = document.getElementById('alertBox');
+      box.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
