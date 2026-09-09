@@ -124,6 +124,7 @@
       padding: 12px;
       position: relative;
     }
+        /* แก้ไข 3 คลาสนี้ในส่วน <style> */
     .canvas-wrap {
       position: relative;
       width: 100%;
@@ -132,6 +133,7 @@
       background: #02050b;
       border: 1px solid var(--border);
       touch-action: none;
+      aspect-ratio: 1 / 1; /* บังคับสัดส่วน 1:1 เสมอ */
     }
     .canvas-wrap img {
       position: absolute;
@@ -139,18 +141,20 @@
       left: 0;
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      display: block;
       pointer-events: none;
       z-index: 1;
     }
     .canvas-wrap canvas {
-      position: relative;
-      display: block;
+      position: absolute; /* เปลี่ยนจาก relative เป็น absolute เพื่อทับภาพเป๊ะๆ */
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       z-index: 2;
       cursor: crosshair;
     }
+
 
     .hint-text {
       text-align: center;
@@ -357,16 +361,13 @@
       loadRadarImage(0);
     }
 
-    function fitCanvas() {
-      const containerWidth = wrap.clientWidth;
-      const ratio = state.imgHeight / state.imgWidth;
-      const displayHeight = containerWidth * ratio;
-
+        function fitCanvas() {
+      // ตั้งขนาด Pixel ภายใน Canvas ให้เท่ากับความละเอียดจริงของภาพ (800x800)
       canvas.width = state.imgWidth;
       canvas.height = state.imgHeight;
-      wrap.style.height = displayHeight + 'px';
       drawOverlay();
     }
+
 
     window.addEventListener('resize', fitCanvas);
 
