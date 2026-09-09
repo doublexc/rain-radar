@@ -352,7 +352,7 @@
 
     window.addEventListener('resize', fitCanvas);
 
-    // ============================================================
+      // ============================================================
     // CANVAS EVENTS (MANUAL PINNING)
     // ============================================================
     function setupCanvasEvents() {
@@ -370,24 +370,29 @@
       };
 
       const handlePointer = (e) => {
-  if (e.cancelable) e.preventDefault();
-  hideAlert();
-  
-  const pos = getPos(e);
-  state.userPos = pos;
+        if (e.cancelable) e.preventDefault();
+        hideAlert();
+        
+        const pos = getPos(e);
+        state.userPos = pos;
 
-  // คำนวณย้อนกลับจาก Pixel -> Lat/Lon ตามขอบเขต BOUNDS
-  const lon = BOUNDS.lonMin + (pos.x / state.imgWidth) * (BOUNDS.lonMax - BOUNDS.lonMin);
-  const lat = BOUNDS.latMax - (pos.y / state.imgHeight) * (BOUNDS.latMax - BOUNDS.latMin);
-  state.userLatLon = { lat, lon };
+        // คำนวณย้อนกลับจาก Pixel -> Lat/Lon ตามขอบเขต BOUNDS
+        const lon = BOUNDS.lonMin + (pos.x / state.imgWidth) * (BOUNDS.lonMax - BOUNDS.lonMin);
+        const lat = BOUNDS.latMax - (pos.y / state.imgHeight) * (BOUNDS.latMax - BOUNDS.latMin);
+        state.userLatLon = { lat, lon };
 
-  drawOverlay();
+        drawOverlay();
 
-  // แสดงพิกัดและค่าพิกเซลใต้รูป
-  document.getElementById('statusHint').innerHTML = 
-    `📍 ปักหมุดที่: <strong>Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}</strong> ` +
-    `<span style="color: var(--text-dim); font-size: 11px;">(Pixel: X=${Math.round(pos.x)}, Y=${Math.round(pos.y)})</span>`;
-};
+        // แสดงพิกัดและค่าพิกเซลใต้รูป
+        document.getElementById('statusHint').innerHTML = 
+          `📍 ปักหมุดที่: <strong>Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}</strong> ` +
+          `<span style="color: var(--text-dim); font-size: 11px;">(Pixel: X=${Math.round(pos.x)}, Y=${Math.round(pos.y)})</span>`;
+      };
+
+      // ผูก Event ให้ Canvas สามารถแตะปักหมุดได้
+      canvas.addEventListener('touchstart', handlePointer, { passive: false });
+      canvas.addEventListener('mousedown', handlePointer);
+    }
 
     // ============================================================
     // GEOLOCATION (GPS)
