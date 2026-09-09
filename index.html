@@ -253,11 +253,18 @@
   </div>
 
   <script>
-    // สถานีเรดาร์หนองแขม
-    const RADAR_STATION = { lat: 13.7056, lon: 100.3547 };
-    const RADAR_CENTER_PX = { x: 400, y: 400 }; 
-    const KM_PER_PX = 120 / 365; // สัดส่วนระยะ 120 กม. = 365 px
-    const PX_PER_KM = 1 / KM_PER_PX;
+    // ============================================================
+    // CONFIGURATION & RADAR CALIBRATION (CALIBRATED)
+    // ============================================================
+    // พิกัดจริงของจุดกากบาทกึ่งกลางวงเรดาร์บนภาพ
+    const RADAR_STATION = { lat: 13.7094, lon: 100.6070 };
+    
+    // พิกัดพิกเซลจุดกึ่งกลางที่แตะได้จริงบนภาพ 800x800 px
+    const RADAR_CENTER_PX = { x: 483, y: 399 }; 
+    
+    // สเกลระยะทางจริงที่ผ่านการ Calibrate แล้ว (กิโลเมตรต่อพิกเซล)
+    const KM_PER_PX = 0.3394; 
+    const PX_PER_KM = 1 / KM_PER_PX; // ~2.946 px/km
 
     const RADAR_URL = 'https://weather.tmd.go.th/pic_bmankLoop.gif';
     const PROXY_LIST = [
@@ -390,13 +397,15 @@
 
           const pixelPos = latLonToPixel(lat, lon);
 
+       // ตรวจสอบว่าพิกัดหลุดรัศมีตรวจวัดของเรดาร์หรือไม่ (120 กม. ตามสเกลจริง)
           const distFromCenterPx = Math.sqrt(
             Math.pow(pixelPos.x - RADAR_CENTER_PX.x, 2) + 
             Math.pow(pixelPos.y - RADAR_CENTER_PX.y, 2)
           );
 
-          if (distFromCenterPx > 365) {
-            showAlert('ตำแหน่งของคุณอยู่นอกขอบเขตเรดาร์หนองแขม (เกิน 120 กม.)');
+          // 120 กม. / 0.3394 = ~354 พิกเซล
+          if (distFromCenterPx > (120 / KM_PER_PX)) {
+            showAlert('ตำแหน่งของคุณอยู่นอกขอบเขตตรวจวัดของเรดาร์ (เกิน 120 กม.)');
             return;
           }
 
