@@ -256,12 +256,9 @@
     // ============================================================
     // CONFIGURATION & RADAR CALIBRATION (960x800 TRUE RESOLUTION)
     // ============================================================
-    // สถานีเรดาร์หนองแขม
     const RADAR_STATION = { lat: 13.7056, lon: 100.3547 };
-    
-    // จุดกึ่งกลางภาพขนาด 960x800 พิกเซล
     const RADAR_CENTER_PX = { x: 480, y: 400 }; 
-    const KM_PER_PX = 120 / 365; // ~0.3288 กม./พิกเซล (ทรงกลมสมมาตรเท่ากันทั้ง X และ Y)
+    const KM_PER_PX = 120 / 365; // ~0.3288 กม./พิกเซล
     const PX_PER_KM = 1 / KM_PER_PX;
 
     const RADAR_URL = 'https://weather.tmd.go.th/pic_bmankLoop.gif';
@@ -274,12 +271,16 @@
     let state = {
       userPos: null,
       userLatLon: null,
-      imgWidth: 960,  // ปรับความกว้างเป็น 960
-      imgHeight: 800, // ปรับความสูงเป็น 800
+      imgWidth: 960,
+      imgHeight: 800,
       pxPerKm: PX_PER_KM
     };
 
-    // --- ฟังก์ชันแปลงพิกัดกลับสู่สมมาตรทรงกลม 1:1 ---
+    const canvas = document.getElementById('overlayCanvas');
+    const ctx = canvas.getContext('2d');
+    const radarImg = document.getElementById('radarImg');
+
+    // ฟังก์ชันแปลงพิกัด (Lat/Lon <-> Pixel)
     function latLonToPixel(lat, lon) {
       const dLatKm = (lat - RADAR_STATION.lat) * 111.32;
       const avgLatRad = ((lat + RADAR_STATION.lat) / 2) * (Math.PI / 180);
@@ -359,7 +360,7 @@
         drawOverlay();
 
         document.getElementById('statusHint').innerHTML = 
-          `📍 ปักหมุดที่: <strong>Lat ${coords.lat.toFixed(4)}, Lon ${coords.lon.toFixed(4)}</strong> ` +
+          `📍 ปักหมุดที่: <strong>Lat ${coords.lat.toFixed(4)}, Lon${coords.lon.toFixed(4)}</strong> ` +
           `<span style="color: var(--text-dim); font-size: 11px;">(Pixel: X=${Math.round(x)}, Y=${Math.round(y)})</span>`;
       });
     }
@@ -396,8 +397,8 @@
             Math.pow(pixelPos.y - RADAR_CENTER_PX.y, 2)
           );
 
-          // ตรวจสอบระยะหลุด 120 กม. (ใช้ KM_PER_PX_AVG แทนตัวแปรเดิมที่หายไป)
-          if (distFromCenterPx > (120 / KM_PER_PX_AVG)) {
+          // ตรวจสอบระยะตรวจวัด 120 กม. โดยอิง KM_PER_PX
+          if (distFromCenterPx > (120 / KM_PER_PX)) {
             showAlert('ตำแหน่งของคุณอยู่นอกขอบเขตตรวจวัดของเรดาร์ (เกิน 120 กม.)');
             return;
           }
@@ -407,85 +408,5 @@
           drawOverlay();
 
           document.getElementById('statusHint').innerHTML = 
-            `📍 ล็อกพิกัด GPS แล้ว: <strong>Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}</strong> ` +
-            `<span style="color: var(--text-dim); font-size: 11px;">(Pixel: X=${Math.round(pixelPos.x)}, Y=${Math.round(pixelPos.y)})</span>`;
-        },
-        (error) => {
-          btn.disabled = false;
-          icon.innerHTML = '📍';
-          text.textContent = 'ดึงตำแหน่งจาก GPS';
-
-          let msg = 'ไม่สามารถดึงตำแหน่ง GPS ได้';
-          if (error.code === error.PERMISSION_DENIED) {
-            msg = 'เบราว์เซอร์ถูกบล็อกสิทธิ์ตำแหน่ง (ต้องเปิดผ่าน HTTPS หรือ GitHub Pages เท่านั้น)';
-          } else if (error.code === error.POSITION_UNAVAILABLE) {
-            msg = 'ไม่พบสัญญาณ GPS กรุณาแตะปักหมุดเองบนภาพ';
-          }
-          showAlert(msg);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
-
-    function drawOverlay() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (!state.userPos) return;
-
-      const { x, y } = state.userPos;
-      const pxPerKm = state.pxPerKm;
-
-      const rings = [
-        { km: 20, color: '#eab308', fill: 'rgba(234, 179, 8, 0.08)', label: '20 กม.' },
-        { km: 10, color: '#f97316', fill: 'rgba(249, 115, 22, 0.12)', label: '10 กม.' },
-        { km: 5,  color: '#ef4444', fill: 'rgba(239, 68, 68, 0.18)', label: '5 กม.' }
-      ];
-
-      rings.forEach(ring => {
-        const radius = ring.km * pxPerKm;
-
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = ring.fill;
-        ctx.fill();
-        ctx.strokeStyle = ring.color;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        ctx.font = 'bold 11px Sarabun';
-        ctx.fillStyle = ring.color;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(ring.label, x, y - radius - 3);
-      });
-
-      // หมุดกึ่งกลาง
-      ctx.beginPath();
-      ctx.arc(x, y, 9, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0, 212, 255, 0.4)';
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#00d4ff';
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-
-    function showAlert(msg) {
-      const box = document.getElementById('alertBox');
-      box.textContent = msg;
-      box.style.display = 'block';
-    }
-
-    function hideAlert() {
-      const box = document.getElementById('alertBox');
-      box.style.display = 'none';
-    }
-  </script>
-</body>
-</html>
+            `📍 ล็อกพิกัด GPS แล้ว: <strong>Lat ${lat.toFixed(4)}, Lon${lon.toFixed(4)}</strong> ` +
+            `<span style
