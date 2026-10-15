@@ -289,8 +289,8 @@
     // CONFIGURATION & RADAR CALIBRATION (960x800 TRUE RESOLUTION)
     // ============================================================
     const RADAR_STATION = { lat: 13.7056, lon: 100.3547 };
-    const RADAR_CENTER_PX = { x: 497, y: 402 };
-    const KM_PER_PX = 120 / 365; // ~0.3288 กม./พิกเซล
+    const RADAR_CENTER_PX = { x: 483, y: 414 }; // ปรับจากจุดอ้างอิงจริง 3 จุด
+    const KM_PER_PX = 0.30; // 120 กม. = 400 px (ปรับจากจุดอ้างอิงจริง)
     const PX_PER_KM = 1 / KM_PER_PX;
 
     const RADAR_URL = 'https://weather.tmd.go.th/pic_bmankLoop.gif';
