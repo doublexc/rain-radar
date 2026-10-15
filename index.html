@@ -92,6 +92,23 @@
       padding: 12px 16px;
     }
 
+    /* Manual position input */
+    .cal-box { margin-top: 12px; background: var(--surface); border: 1px solid var(--border); padding: 12px; border-radius: 10px; }
+    .cal-title { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+    .cal-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+    .cal-tab {
+      flex: 1; padding: 7px 10px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text-dim);
+      font-family: 'Sarabun', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .cal-tab.active { background: var(--accent); border-color: var(--accent); color: #04101e; }
+    .cal-row { display: flex; gap: 8px; }
+    .cal-input {
+      width: 100%; min-width: 0; padding: 8px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+      font-family: 'Sarabun', sans-serif; font-size: 14px;
+    }
+
     /* Legend Box */
     .legend-bar {
       display: flex;
@@ -273,11 +290,21 @@
       </div>
     </div>
 
-    <div style="margin-top: 12px; background: var(--surface); border: 1px solid var(--border); padding: 12px; border-radius: 10px;">
-      <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px;">⌨️ ตั้งค่าพิกัด Pixel เอง:</div>
-      <div style="display: flex; gap: 8px;">
-        <input type="number" id="calX" placeholder="X" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text);">
-        <input type="number" id="calY" placeholder="Y" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text);">
+    <div class="cal-box">
+      <div class="cal-title">⌨️ ระบุตำแหน่งหมุดเอง:</div>
+      <div class="cal-tabs">
+        <button class="cal-tab active" id="calTabLatLon" onclick="setCalMode('latlon')">ละติจูด / ลองจิจูด</button>
+        <button class="cal-tab" id="calTabPixel" onclick="setCalMode('pixel')">Pixel (X, Y)</button>
+      </div>
+      <div class="cal-row">
+        <div class="cal-row" id="calLatLonGroup" style="flex: 1; min-width: 0;">
+          <input type="number" step="any" inputmode="decimal" id="calLat" class="cal-input" placeholder="ละติจูด เช่น 13.7056" onkeydown="if(event.key==='Enter')applyManualCalibration()">
+          <input type="number" step="any" inputmode="decimal" id="calLon" class="cal-input" placeholder="ลองจิจูด เช่น 100.3547" onkeydown="if(event.key==='Enter')applyManualCalibration()">
+        </div>
+        <div class="cal-row" id="calPixelGroup" style="flex: 1; min-width: 0; display: none;">
+          <input type="number" step="1" inputmode="numeric" id="calX" class="cal-input" placeholder="X" onkeydown="if(event.key==='Enter')applyManualCalibration()">
+          <input type="number" step="1" inputmode="numeric" id="calY" class="cal-input" placeholder="Y" onkeydown="if(event.key==='Enter')applyManualCalibration()">
+        </div>
         <button class="btn btn-secondary" onclick="applyManualCalibration()" style="flex: 0 0 auto; padding: 8px 16px;">ย้าย</button>
       </div>
     </div>
@@ -400,6 +427,7 @@
         state.userLatLon = coords;
 
         drawOverlay();
+        syncCalInputs();
 
         document.getElementById('statusHint').innerHTML = 
           `📍 ปักหมุดที่: <strong>Lat ${coords.lat.toFixed(4)}, Lon ${coords.lon.toFixed(4)}</strong> ` +
@@ -447,6 +475,7 @@
           state.userPos = pixelPos;
           state.userLatLon = { lat, lon };
           drawOverlay();
+          syncCalInputs();
 
           document.getElementById('statusHint').innerHTML = 
             `📍 ล็อกพิกัด GPS แล้ว: <strong>Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}</strong> ` +
@@ -518,19 +547,92 @@
       ctx.stroke();
     }
 
+    // ---- Manual position input (default mode: lat/lon) ----
+    let calMode = 'latlon';
+
+    function numVal(id) {
+      const v = parseFloat(document.getElementById(id).value);
+      return isNaN(v) ? null : v;
+    }
+
+    function setCalMode(mode) {
+      if (mode === calMode) return;
+
+      // Carry over whatever is already typed so the person doesn't lose it
+      if (mode === 'pixel') {
+        const lat = numVal('calLat'), lon = numVal('calLon');
+        if (lat !== null && lon !== null) {
+          const p = latLonToPixel(lat, lon);
+          document.getElementById('calX').value = Math.round(p.x);
+          document.getElementById('calY').value = Math.round(p.y);
+        }
+      } else {
+        const x = numVal('calX'), y = numVal('calY');
+        if (x !== null && y !== null) {
+          const c = pixelToLatLon(x, y);
+          document.getElementById('calLat').value = c.lat.toFixed(4);
+          document.getElementById('calLon').value = c.lon.toFixed(4);
+        }
+      }
+
+      calMode = mode;
+      document.getElementById('calLatLonGroup').style.display = (mode === 'latlon') ? 'flex' : 'none';
+      document.getElementById('calPixelGroup').style.display = (mode === 'pixel') ? 'flex' : 'none';
+      document.getElementById('calTabLatLon').classList.toggle('active', mode === 'latlon');
+      document.getElementById('calTabPixel').classList.toggle('active', mode === 'pixel');
+    }
+
+    // Keep both input modes showing the current pin (after a tap or GPS)
+    function syncCalInputs() {
+      if (!state.userPos || !state.userLatLon) return;
+      document.getElementById('calX').value = Math.round(state.userPos.x);
+      document.getElementById('calY').value = Math.round(state.userPos.y);
+      document.getElementById('calLat').value = state.userLatLon.lat.toFixed(4);
+      document.getElementById('calLon').value = state.userLatLon.lon.toFixed(4);
+    }
+
     function applyManualCalibration() {
-      const x = parseInt(document.getElementById('calX').value);
-      const y = parseInt(document.getElementById('calY').value);
-      if (isNaN(x) || isNaN(y)) return;
+      hideAlert();
+      let pos, latLon;
 
-      state.userPos = { x, y };
-      state.userLatLon = pixelToLatLon(x, y);
+      if (calMode === 'latlon') {
+        const lat = numVal('calLat');
+        const lon = numVal('calLon');
+        if (lat === null || lon === null) {
+          showAlert('กรุณากรอกละติจูดและลองจิจูดให้ครบ');
+          return;
+        }
+        if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+          showAlert('ค่าละติจูด/ลองจิจูดไม่ถูกต้อง (ละติจูด -90 ถึง 90, ลองจิจูด -180 ถึง 180)');
+          return;
+        }
+        pos = latLonToPixel(lat, lon);
+        latLon = { lat, lon };
 
+        const distPx = Math.hypot(pos.x - RADAR_CENTER_PX.x, pos.y - RADAR_CENTER_PX.y);
+        if (distPx > (120 / KM_PER_PX)) {
+          showAlert('ตำแหน่งนี้อยู่นอกขอบเขตตรวจวัดของเรดาร์ (เกิน 120 กม.)');
+          return;
+        }
+      } else {
+        const x = numVal('calX');
+        const y = numVal('calY');
+        if (x === null || y === null) {
+          showAlert('กรุณากรอกค่า X และ Y ให้ครบ');
+          return;
+        }
+        pos = { x, y };
+        latLon = pixelToLatLon(x, y);
+      }
+
+      state.userPos = pos;
+      state.userLatLon = latLon;
       drawOverlay();
+      syncCalInputs();
 
       document.getElementById('statusHint').innerHTML =
-        `📍 ปักหมุดที่: <strong>Lat ${state.userLatLon.lat.toFixed(4)}, Lon ${state.userLatLon.lon.toFixed(4)}</strong> ` +
-        `<span style="color: var(--text-dim); font-size: 11px;">(Pixel: X=${Math.round(x)}, Y=${Math.round(y)})</span>`;
+        `📍 ปักหมุดที่: <strong>Lat ${latLon.lat.toFixed(4)}, Lon ${latLon.lon.toFixed(4)}</strong> ` +
+        `<span style="color: var(--text-dim); font-size: 11px;">(Pixel: X=${Math.round(pos.x)}, Y=${Math.round(pos.y)})</span>`;
     }
 
     function showAlert(msg) {
