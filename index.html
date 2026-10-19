@@ -230,21 +230,38 @@
         <div class="header-sub">รัศมีตรวจวัด ~120 กม. (ภาพวน 50 นาทีล่าสุด)</div>
       </div>
     </div>
-    <a href="manual.html" style="
-      text-decoration: none;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--accent);
-      border: 1px solid var(--border);
-      background: var(--surface2);
-      padding: 6px 12px;
-      border-radius: 20px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    ">
-      📐 โหมดคำนวณ &rarr;
-    </a>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <div id="viewCounterBadge" style="
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--accent);
+        border: 1px solid var(--border);
+        background: var(--surface2);
+        padding: 6px 10px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+      ">
+        👤 <span id="viewCountNum">0</span>
+      </div>
+      <a href="manual.html" style="
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--accent);
+        border: 1px solid var(--border);
+        background: var(--surface2);
+        padding: 6px 12px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      ">
+        📐 โหมดคำนวณ &rarr;
+      </a>
+    </div>
   </div>
 
   <div class="content">
@@ -645,6 +662,31 @@
       const box = document.getElementById('alertBox');
       box.style.display = 'none';
     }
+
+    // ============================================================
+    // VIEW COUNTER (Non-blocking with AbortController timeout & fallback)
+    // ============================================================
+    async function initViewCounter() {
+      const countEl = document.getElementById('viewCountNum');
+      if (!countEl) return;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch('https://api.counterapi.dev/v1/rain-radar/nongkhaem/up', {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const data = await res.json();
+          countEl.textContent = (data.count || 0).toLocaleString();
+        } else {
+          countEl.textContent = '0';
+        }
+      } catch (err) {
+        countEl.textContent = '0';
+      }
+    }
+    initViewCounter();
   </script>
 </body>
 </html>
