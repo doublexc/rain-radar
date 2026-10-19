@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>เรดาร์ฝนหนองแขม - วงรัศมีเตือนภัย</title>
+  <script src="https://cdn.jsdelivr.net/npm/counterapi@3/dist/index.global.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
 
@@ -664,21 +665,18 @@
     }
 
     // ============================================================
-    // VIEW COUNTER (Non-blocking with AbortController timeout & fallback)
+    // VIEW COUNTER (CounterAPI v2 CDN)
     // ============================================================
     async function initViewCounter() {
       const countEl = document.getElementById('viewCountNum');
       if (!countEl) return;
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
-        const res = await fetch('https://api.counterapi.dev/v1/rain-radar/nongkhaem/up', {
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          const data = await res.json();
-          countEl.textContent = (data.count || 0).toLocaleString();
+        const counter = new CounterAPI({ workspace: 'my-website' });
+        const res = await counter.up('page-viewspage-views');
+        if (res && typeof res.up_count !== 'undefined') {
+          countEl.textContent = Number(res.up_count).toLocaleString();
+        } else if (res && typeof res.count !== 'undefined') {
+          countEl.textContent = Number(res.count).toLocaleString();
         } else {
           countEl.textContent = '0';
         }
